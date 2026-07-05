@@ -35,7 +35,7 @@ public class CloudLLMServiceImpl implements LLMService {
         if (prompt.contains("简历")) {
             return "{\"name\":\"李四\",\"education\":\"硕士\",\"skills\":[\"Python\",\"Django\",\"PostgreSQL\"],\"experience\":3,\"city\":\"上海\"}";
         } else if (prompt.contains("职位")) {
-            return "{\"positionName\":\"Python开发工程师\",\"educationRequirement\":\"本科\",\"skillRequirements\":[\"Python\",\"Django\",\"Docker\"],\"experienceRequirement\":2,\"workCity\":\"深圳\"}";
+            return "{\"title\":\"Python开发工程师\",\"eduReq\":\"本科\",\"skillReq\":[\"Python\",\"Django\",\"Docker\"],\"expReq\":2,\"city\":\"深圳\"}";
         }
         return "{}";
     }

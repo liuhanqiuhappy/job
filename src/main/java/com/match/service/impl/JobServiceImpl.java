@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 public class JobServiceImpl implements JobService {
@@ -39,5 +41,11 @@ public class JobServiceImpl implements JobService {
                 .orderByDesc("create_time")
                 .last("LIMIT 1");
         return jobMapper.selectOne(queryWrapper);
+    }
+
+    @Override
+    public List<Job> findAll() {
+        log.info("查询所有职位");
+        return jobMapper.selectList(null);
     }
 }

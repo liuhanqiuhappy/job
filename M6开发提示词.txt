@@ -1,0 +1,217 @@
+【项目背景 - 接续 M5 档案展示】
+项目已完成 M1~M5，当前状态：
+- 后端：SpringBoot 8080，已集成 MyBatis-Plus + PDFBox + POI + 大模型双模切换
+- 数据库：`resume` 和 `job` 表的 `parsed_json` 字段已有解析数据（JSON格式）
+- 实体类：`Resume.java`、`Job.java` 中的 `parsedJson` 字段使用 `String` 类型
+- 已有 Service：`ResumeService.java`（含 `getLatestByUserId`）、`JobService.java`（含 `getLatestByUserId`）
+- 前端：个人/企业工作台已有档案展示功能，等待匹配结果展示
+
+【本次任务：开发 M6 匹配算法后端模块】
+请严格按照以下要求生成代码，严禁越界。
+
+--- 匹配算法核心逻辑（必须实现） ---
+总分 = 硬性条件分（40分）+ 语义技能分（60分），满分100分。
+
+1. 硬性条件分（40分）：
+   a. 学历匹配（20分）：
+      - 职位要求 "本科及以上" 或 "硕士及以上" → 求职者 "硕士" 或 "本科" 得 20分
+      - 职位要求 "本科及以上" → 求职者 "专科" 得 10分
+      - 职位要求 "本科及以上" → 求职者 "高中/中专" 得 0分
+      - 职位要求 "硕士及以上" → 求职者 "硕士" 得 20分，"本科" 得 10分
+      - 若职位无学历要求，默认所有人得 20分（视为门槛不限）
+
+   b. 城市匹配（20分）：
+      - 求职者期望城市 == 职位工作城市 → 20分
+      - 同省不同市 → 10分（对应比赛额外加分项）
+      - 不同省 → 0分
+      - 若职位无城市要求，默认得 20分
+
+2. 语义技能分（60分）：
+   a. Jaccard系数（30分）：
+      - 公式：(交集技能数 / 并集技能数) × 30
+      - 若双方技能列表都为空，得 0分
+      - 技能比较时不区分大小写
+
+   b. 余弦相似度（30分）：
+      - 简化版：使用词频向量（TF-IDF），计算夹角余弦值 × 30
+      - 若技能列表为空，得 0分
+
+--- 后端开发要求（Java） ---
+1. 生成 `MatchService.java`（放在 `com.match.service` 包）及其实现类 `MatchServiceImpl.java`：
+   提供以下方法：
+   - `MatchResult calculateMatch(Long resumeId, Long jobId)`：
+     - 根据 `resumeId` 查询 `resume` 表，获取 `parsed_json`（简历解析结果）
+     - 根据 `jobId` 查询 `job` 表，获取 `parsed_json`（职位解析结果）
+     - 分别从 JSON 中提取：学历、城市、技能列表
+     - 计算硬性条件分（学历匹配 + 城市匹配）
+     - 计算语义技能分（Jaccard + 余弦相似度）
+     - 返回 `MatchResult` 对象（包含总分、各项分数、匹配详情）
+
+2. 生成 `MatchResult.java`（放在 `com.match.dto` 包）：
+   ```java
+   public class MatchResult {
+       private Double totalScore;          // 总分（0-100）
+       private Double educationScore;      // 学历匹配分（0-20）
+       private Double cityScore;           // 城市匹配分（0-20）
+       private Double jaccardScore;        // Jaccard系数分（0-30）
+       private Double cosineScore;         // 余弦相似度分（0-30）
+       private String educationMatch;      // 学历匹配详情（如 "本科要求，求职者本科，得分20/20"）
+       private String cityMatch;           // 城市匹配详情
+       private List<String> commonSkills;  // 交集技能
+       private List<String> missingSkills; // 求职者缺失的技能（职位有但简历没有）
+       private Double resumeId;
+       private Double jobId;
+   }
+生成 MatchController.java（放在 com.match.controller 包）：
+提供两个接口：
+
+GET /api/match/calculate?resumeId={resumeId}&jobId={jobId}：
+
+调用 MatchService.calculateMatch()，返回 Result.success(matchResult)
+
+GET /api/match/recommend/jobs（为个人推荐职位）：
+
+从 HttpSession 获取当前 userId
+
+查询该用户的简历（按 create_time 降序取第一条），获取 resumeId
+
+查询所有职位（job 表），逐个计算匹配分
+
+按总分降序排序，返回前 10 个职位及其匹配结果
+
+GET /api/match/recommend/candidates（为企业推荐候选人）：
+
+从 HttpSession 获取当前 userId（企业）
+
+查询该企业发布的职位（按 create_time 降序取第一条），获取 jobId
+
+查询所有简历（resume 表），逐个计算匹配分
+
+按总分降序排序，返回前 10 个候选人及其匹配结果
+
+生成 RecommendJobVO.java 和 RecommendCandidateVO.java（放在 com.match.dto 包）：
+
+包含：用户ID、用户名、匹配结果（MatchResult）、基本信息（如简历ID、职位ID）
+
+增强 ResumeService.java 和 JobService.java：
+
+新增 List<Resume> findAll() 方法（查询所有简历）
+
+新增 List<Job> findAll() 方法（查询所有职位）
+
+在实现类中实现（使用 MyBatis-Plus 的 list() 方法）
+
+--- 🚨 硬性限制（绝对禁止违反） ---
+
+严禁修改登录、注册、上传、解析、档案展示功能的任何逻辑和样式。
+
+严禁修改 user 表结构。
+
+严禁修改 application.yml 中的端口、数据库连接。
+
+严禁生成任何前端代码（Vue 文件）——M6 只做后端接口。
+
+严禁使用任何外部匹配库（自己实现算法逻辑）。
+
+严禁硬编码任何匹配规则（如学历映射关系写在配置中）。
+
+推荐接口返回的数据必须包含 MatchResult 中的所有详情字段（方便前端展示匹配依据）。
+
+请分别给出：
+
+MatchResult.java 完整代码
+
+RecommendJobVO.java 完整代码
+
+RecommendCandidateVO.java 完整代码
+
+MatchService.java 接口完整代码
+
+MatchServiceImpl.java 实现类完整代码（含学历匹配、城市匹配、Jaccard、余弦相似度算法）
+
+MatchController.java 完整代码（含三个接口）
+
+更新后的 ResumeService.java 接口和 ResumeServiceImpl.java 实现类（新增 findAll 方法）
+
+更新后的 JobService.java 接口和 JobServiceImpl.java 实现类（新增 findAll 方法）
+
+text
+
+---
+
+## 🎯 匹配算法实现细节说明
+
+### 学历匹配映射关系（直接写在代码里）
+
+```java
+private double calculateEducationScore(String resumeEdu, String jobEdu) {
+    if (jobEdu == null || jobEdu.isEmpty()) return 20.0;
+    
+    Map<String, Integer> eduLevel = new HashMap<>();
+    eduLevel.put("博士", 5);
+    eduLevel.put("硕士", 4);
+    eduLevel.put("本科", 3);
+    eduLevel.put("专科", 2);
+    eduLevel.put("高中", 1);
+    eduLevel.put("中专", 1);
+    
+    int resumeLevel = eduLevel.getOrDefault(resumeEdu, 0);
+    int jobLevel = eduLevel.getOrDefault(jobEdu, 0);
+    
+    if (resumeLevel >= jobLevel) return 20.0;
+    if (resumeLevel == jobLevel - 1) return 10.0;
+    return 0.0;
+}
+城市匹配逻辑（同省判断）
+java
+private double calculateCityScore(String resumeCity, String jobCity) {
+    if (jobCity == null || jobCity.isEmpty()) return 20.0;
+    if (resumeCity == null || resumeCity.isEmpty()) return 0.0;
+    if (resumeCity.equals(jobCity)) return 20.0;
+    // 同省判断（简单版：取城市名的前2个字符，如"成都"和"绵阳"都属于"四川"）
+    // 实际项目中可用省份映射表，这里简化处理
+    if (resumeCity.substring(0, 2).equals(jobCity.substring(0, 2))) return 10.0;
+    return 0.0;
+}
+Jaccard 系数实现
+java
+private double calculateJaccardScore(List<String> resumeSkills, List<String> jobSkills) {
+    if (resumeSkills == null || jobSkills == null) return 0.0;
+    if (resumeSkills.isEmpty() && jobSkills.isEmpty()) return 0.0;
+    Set<String> set1 = new HashSet<>(resumeSkills);
+    Set<String> set2 = new HashSet<>(jobSkills);
+    Set<String> intersection = new HashSet<>(set1);
+    intersection.retainAll(set2);
+    Set<String> union = new HashSet<>(set1);
+    union.addAll(set2);
+    return (intersection.size() / (double) union.size()) * 30.0;
+}
+余弦相似度实现（简化版）
+java
+private double calculateCosineScore(List<String> resumeSkills, List<String> jobSkills) {
+    if (resumeSkills == null || jobSkills == null) return 0.0;
+    if (resumeSkills.isEmpty() || jobSkills.isEmpty()) return 0.0;
+    // 构建词频向量（简单计数）
+    Map<String, Integer> resumeFreq = new HashMap<>();
+    Map<String, Integer> jobFreq = new HashMap<>();
+    for (String skill : resumeSkills) {
+        resumeFreq.put(skill.toLowerCase(), resumeFreq.getOrDefault(skill.toLowerCase(), 0) + 1);
+    }
+    for (String skill : jobSkills) {
+        jobFreq.put(skill.toLowerCase(), jobFreq.getOrDefault(skill.toLowerCase(), 0) + 1);
+    }
+    Set<String> allSkills = new HashSet<>(resumeFreq.keySet());
+    allSkills.addAll(jobFreq.keySet());
+    double dotProduct = 0.0;
+    double resumeNorm = 0.0;
+    double jobNorm = 0.0;
+    for (String skill : allSkills) {
+        int rf = resumeFreq.getOrDefault(skill, 0);
+        int jf = jobFreq.getOrDefault(skill, 0);
+        dotProduct += rf * jf;
+        resumeNorm += rf * rf;
+        jobNorm += jf * jf;
+    }
+    if (resumeNorm == 0 || jobNorm == 0) return 0.0;
+    return (dotProduct / (Math.sqrt(resumeNorm) * Math.sqrt(jobNorm))) * 30.0;
+}

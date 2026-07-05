@@ -34,7 +34,7 @@ public class OllamaLLMServiceImpl implements LLMService {
         if (prompt.contains("简历")) {
             return "{\"name\":\"张三\",\"education\":\"本科\",\"skills\":[\"Java\",\"Spring\",\"MySQL\",\"Vue\"],\"experience\":5,\"city\":\"成都\"}";
         } else if (prompt.contains("职位")) {
-            return "{\"positionName\":\"高级Java开发工程师\",\"educationRequirement\":\"本科\",\"skillRequirements\":[\"Java\",\"Spring Boot\",\"MySQL\",\"Redis\"],\"experienceRequirement\":3,\"workCity\":\"北京\"}";
+            return "{\"title\":\"高级Java开发工程师\",\"eduReq\":\"本科\",\"skillReq\":[\"Java\",\"Spring Boot\",\"MySQL\",\"Redis\"],\"expReq\":3,\"city\":\"北京\"}";
         }
         return "{}";
     }

@@ -39,7 +39,7 @@ public class UploadController {
     private static final String[] ALLOWED_EXTENSIONS = {".doc", ".docx", ".pdf"};
 
     @PostMapping("/upload")
-    public Result<String> upload(
+    public Result<Long> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam("type") String type,
             HttpSession session
@@ -112,6 +112,7 @@ public class UploadController {
 
             // 根据类型执行数据库操作，使用targetPath.toString()确保路径格式一致
             String filePath = targetPath.toString();
+            Long recordId = null;
             if ("resume".equals(type)) {
                 Resume resume = new Resume();
                 resume.setUserId(userId);
@@ -123,6 +124,7 @@ public class UploadController {
                     log.error("简历记录插入失败，受影响行数：{}", rows);
                     return Result.error("数据库插入失败");
                 }
+                recordId = resume.getId();
             } else if ("job".equals(type)) {
                 Job job = new Job();
                 job.setUserId(userId);
@@ -134,13 +136,14 @@ public class UploadController {
                     log.error("职位记录插入失败，受影响行数：{}", rows);
                     return Result.error("数据库插入失败");
                 }
+                recordId = job.getId();
             } else {
                 log.warn("上传失败：无效的文件类型，类型：{}", type);
                 return Result.error("无效的文件类型");
             }
 
             log.info("用户ID {} 文件上传完成，类型：{}，文件名：{}", userId, type, newFilename);
-            return Result.success("上传成功");
+            return Result.success(recordId);
 
         } catch (IOException e) {
             // 文件保存相关异常，记录完整堆栈信息

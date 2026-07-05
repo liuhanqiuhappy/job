@@ -1,7 +1,62 @@
 <template>
   <div class="dashboard">
-    <h1>欢迎个人用户</h1>
+    <h1>👋 欢迎回来，个人用户</h1>
     <p>您可以在这里上传简历并查看职位推荐</p>
+
+    <div class="profile-card">
+      <h2 class="card-title">📋 我的档案</h2>
+      <div v-if="isLoading" class="loading-text">加载中...</div>
+      <div v-else-if="profileData" class="profile-content">
+        <div class="info-item">
+          <span class="label">姓名</span>
+          <span class="value">{{ profileData.name || '暂未提取到该信息' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">学历</span>
+          <span class="value">{{ profileData.education || '暂未提取到该信息' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">工作年限</span>
+          <span class="value">{{ (profileData.experience || profileData.experience === 0) ? profileData.experience + '年' : '暂未提取到该信息' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">期望城市</span>
+          <span class="value">{{ profileData.city || '暂未提取到该信息' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">技能</span>
+          <div class="skill-tags" v-if="profileData.skills && profileData.skills.length > 0">
+            <span v-for="skill in profileData.skills" :key="skill" class="skill-tag">{{ skill }}</span>
+          </div>
+          <span v-else class="value">暂未提取到该信息</span>
+        </div>
+      </div>
+      <div v-else class="empty-text">暂未解析简历，请先上传并解析</div>
+    </div>
+
+    <div v-if="profileData || personalDimensions" class="graph-section">
+      <div class="graph-card">
+        <h2 class="card-title">📊 能力图谱</h2>
+        <div v-if="isGraphLoading" class="loading-text">加载中...</div>
+        <div v-else-if="personalDimensions" class="graph-content">
+          <div class="chart-wrapper">
+            <h3 class="chart-title">能力雷达图</h3>
+            <RadarChart 
+              :personal-data="personalDimensions" 
+              :job-data="jobDimensions" 
+            />
+          </div>
+          <div class="chart-wrapper">
+            <h3 class="chart-title">技能关联图</h3>
+            <ForceGraph 
+              :personal-skills="personalDimensions.skillTags || []" 
+              :job-skills="jobDimensions ? jobDimensions.skillTags || [] : []" 
+            />
+          </div>
+        </div>
+        <div v-else class="empty-text">暂无职位匹配，建议先查看推荐职位</div>
+      </div>
+    </div>
     
     <div 
       class="upload-area"
@@ -45,36 +100,44 @@
       <h2 class="card-title">简历解析结果</h2>
       <div class="info-item">
         <span class="label">姓名</span>
-        <span class="value">{{ parseResult.name }}</span>
+        <span class="value">{{ parseResult.name || '暂未提取到该信息' }}</span>
       </div>
       <div class="info-item">
         <span class="label">学历</span>
-        <span class="value">{{ parseResult.education }}</span>
+        <span class="value">{{ parseResult.education || '暂未提取到该信息' }}</span>
       </div>
       <div class="info-item">
         <span class="label">技能</span>
-        <div class="skill-tags">
+        <div class="skill-tags" v-if="parseResult.skills && parseResult.skills.length > 0">
           <span v-for="skill in parseResult.skills" :key="skill" class="skill-tag">{{ skill }}</span>
         </div>
+        <span v-else class="value">暂未提取到该信息</span>
       </div>
       <div class="info-item">
         <span class="label">工作年限</span>
-        <span class="value">{{ parseResult.experience }}年</span>
+        <span class="value">{{ (parseResult.experience || parseResult.experience === 0) ? parseResult.experience + '年' : '暂未提取到该信息' }}</span>
       </div>
       <div class="info-item">
         <span class="label">期望城市</span>
-        <span class="value">{{ parseResult.city }}</span>
+        <span class="value">{{ parseResult.city || '暂未提取到该信息' }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
 import { upload } from '../api/user'
 import { parseResume } from '../api/parse'
+import { getResumeProfile } from '../api/profile'
+import { getResumeDimensions, getJobDimensions } from '../api/dimension'
+import RadarChart from '../components/RadarChart.vue'
+import ForceGraph from '../components/ForceGraph.vue'
 
 const fileInput = ref(null)
+const isLoading = ref(true)
+const profileData = ref(null)
 const isDragOver = ref(false)
 const uploadMessage = ref('')
 const uploadSuccess = ref(false)
@@ -84,6 +147,9 @@ const isParsing = ref(false)
 const parseMessage = ref('')
 const parseSuccess = ref(false)
 const parseResult = ref(null)
+const personalDimensions = ref(null)
+const jobDimensions = ref(null)
+const isGraphLoading = ref(false)
 
 const triggerFileInput = () => {
   fileInput.value.click()
@@ -134,12 +200,12 @@ const handleFile = (file) => {
   
   upload(file, 'resume')
     .then(response => {
-      const { code, msg } = response.data
+      const { code, msg, data } = response.data
       if (code === 0) {
         uploadMessage.value = '文件 ' + fileName + ' 上传成功'
         uploadSuccess.value = true
         hasResume.value = true
-        resumeId.value = null
+        resumeId.value = data || null
       } else {
         uploadMessage.value = msg
         uploadSuccess.value = false
@@ -168,16 +234,31 @@ const handleParse = () => {
 
   parseResume(targetId)
     .then(response => {
-      const { code, msg } = response.data
+      const { code, msg, data } = response.data
       if (code === 0) {
         parseMessage.value = msg
         parseSuccess.value = true
-        parseResult.value = {
-          name: '张三',
-          education: '本科',
-          skills: ['Java', 'Spring', 'MySQL', 'Vue'],
-          experience: 5,
-          city: '成都'
+        if (data) {
+          try {
+            parseResult.value = typeof data === 'string' ? JSON.parse(data) : data
+          } catch (e) {
+            console.error('解析JSON失败', e)
+            parseResult.value = {
+              name: '解析失败',
+              education: '解析失败',
+              skills: [],
+              experience: 0,
+              city: '解析失败'
+            }
+          }
+        } else {
+          parseResult.value = {
+            name: '暂未提取到该信息',
+            education: '暂未提取到该信息',
+            skills: [],
+            experience: 0,
+            city: '暂未提取到该信息'
+          }
         }
       } else {
         parseMessage.value = msg
@@ -194,8 +275,91 @@ const handleParse = () => {
     })
     .finally(() => {
       isParsing.value = false
+      if (parseSuccess.value) {
+        loadDimensions()
+      }
     })
 }
+
+const loadProfile = () => {
+  isLoading.value = true
+  profileData.value = null
+  getResumeProfile()
+    .then(response => {
+      const { code, data } = response.data
+      if (code === 0 && data) {
+        try {
+          profileData.value = typeof data.parsedJson === 'string' ? JSON.parse(data.parsedJson) : data.parsedJson
+        } catch (e) {
+          console.error('解析档案JSON失败', e)
+          profileData.value = null
+        }
+      }
+    })
+    .catch(error => {
+      console.error('加载档案失败', error)
+      profileData.value = null
+    })
+    .finally(() => {
+      isLoading.value = false
+    })
+}
+
+const loadDimensions = () => {
+  isGraphLoading.value = true
+  personalDimensions.value = null
+  jobDimensions.value = null
+
+  let targetResumeId = resumeId.value
+  if (!targetResumeId) {
+    targetResumeId = 1
+  }
+
+  getResumeDimensions(targetResumeId)
+    .then(response => {
+      const { code, data } = response.data
+      if (code === 0 && data) {
+        personalDimensions.value = data
+        fetchRecommendJobs()
+      }
+    })
+    .catch(error => {
+      console.error('获取个人维度失败', error)
+    })
+    .finally(() => {
+      isGraphLoading.value = false
+    })
+}
+
+const fetchRecommendJobs = () => {
+  axios.get('/api/match/recommend/jobs', { withCredentials: true })
+    .then(response => {
+      const { code, data } = response.data
+      if (code === 0 && data && data.length > 0) {
+        const firstJob = data[0]
+        const jobId = firstJob.id || firstJob.jobId
+        if (jobId) {
+          getJobDimensions(jobId)
+            .then(response => {
+              const { code, data } = response.data
+              if (code === 0 && data) {
+                jobDimensions.value = data
+              }
+            })
+            .catch(error => {
+              console.error('获取职位维度失败', error)
+            })
+        }
+      }
+    })
+    .catch(error => {
+      console.error('获取推荐职位失败', error)
+    })
+}
+
+onMounted(() => {
+  loadProfile()
+})
 </script>
 
 <style scoped>
@@ -352,11 +516,78 @@ p {
 .skill-tag {
   display: inline-block;
   padding: 4px 12px;
-  margin-right: 8px;
-  margin-bottom: 4px;
-  background-color: #f0f0f0;
+  margin: 4px;
+  background-color: #f0f2f5;
   color: #333;
-  border-radius: 4px;
+  border-radius: 16px;
   font-size: 12px;
+}
+
+.profile-card {
+  width: 400px;
+  margin: 30px auto;
+  padding: 24px;
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid #e8ecf1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  text-align: left;
+}
+
+.loading-text {
+  color: #999;
+  font-size: 14px;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.empty-text {
+  color: #999;
+  font-size: 14px;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.profile-content {
+  padding-top: 8px;
+}
+
+.graph-section {
+  margin-top: 30px;
+}
+
+.graph-card {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid #e8ecf1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  text-align: left;
+}
+
+.graph-content {
+  display: flex;
+  gap: 24px;
+  padding-top: 16px;
+}
+
+.chart-wrapper {
+  flex: 1;
+  min-height: 350px;
+}
+
+.chart-title {
+  color: #1E3A8A;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+  .graph-content {
+    flex-direction: column;
+  }
 }
 </style>

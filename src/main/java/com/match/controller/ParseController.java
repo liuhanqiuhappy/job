@@ -89,7 +89,7 @@ public class ParseController {
                 jobService.updateParsedJson(id, jsonString);
             }
 
-            return Result.success("解析成功");
+            return Result.success(jsonString);
         } catch (Exception e) {
             log.error("解析失败", e);
             return Result.error("解析失败：" + e.getMessage());

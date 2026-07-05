@@ -39,3 +39,5 @@ export function upload(file, type) {
     timeout: 30000
   })
 }
+
+export { service }

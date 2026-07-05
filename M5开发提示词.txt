@@ -1,0 +1,170 @@
+【项目背景 - 接续 M4 文档解析】
+项目已完成 M1~M4，当前状态：
+- 后端：SpringBoot 8080，已集成 MyBatis-Plus + PDFBox + POI
+- 数据库：`resume` 和 `job` 表的 `parsed_json` 字段已有解析数据（JSON格式）
+- 实体类：`Resume.java`、`Job.java` 中的 `parsedJson` 字段使用 `String` 类型
+- 前端：登录页为深蓝政务风格（主色 #1E3A8A），个人/企业工作台已有上传和解析按钮
+- UI规范：白色卡片、柔和阴影（0 2px 8px rgba(0,0,0,0.08)）、圆角8px、无第三方UI库
+
+【本次任务：开发 M5 档案展示模块】
+请严格按照以下要求生成代码，严禁越界。
+
+--- 后端开发要求（Java） ---
+1. 生成 `ProfileController.java`（放在 `com.match.controller` 包）：
+   - 提供 `GET /api/profile/resume` 接口：
+     - 从 `HttpSession` 获取当前 `userId`
+     - 查询 `resume` 表，返回该用户最新的一条简历记录（按 `create_time` 降序取第一条）
+     - 返回 `Result.success(resume对象)`
+   - 提供 `GET /api/profile/job` 接口：
+     - 从 `HttpSession` 获取当前 `userId`（企业用户）
+     - 查询 `job` 表，返回该企业最新的一条职位记录（按 `create_time` 降序取第一条）
+     - 返回 `Result.success(job对象)`
+
+2. 生成 `ResumeService.java` 和 `JobService.java` 中新增方法（如已有则扩展）：
+   - `Resume getLatestByUserId(Long userId)`
+   - `Job getLatestByUserId(Long userId)`
+   - 在 `ResumeServiceImpl.java` 和 `JobServiceImpl.java` 中实现（使用 MyBatis-Plus 的 `LambdaQueryWrapper`，按 `create_time` 降序，取第一条）
+
+--- 前端开发要求（Vue3 + 原生HTML/CSS，保持深蓝政务风格） ---
+1. 修改 `frontend/src/views/Personal.vue`（个人工作台）：
+   - **页面布局**（从上到下）：
+     - 顶部：欢迎语 + 用户角色标识
+     - 区域1：上传简历（已有，保持不变）
+     - 区域2：解析简历（已有，保持不变）
+     - **区域3（新增）：我的档案**
+       - 标题：`📋 我的档案`（使用深蓝 #1E3A8A）
+       - 自动加载当前用户的最新简历数据（调用 `/api/profile/resume`）
+       - 展示字段（卡片形式）：
+         - 姓名、学历、工作年限、期望城市（使用 `<span>` 标签）
+         - 技能列表：使用圆角灰色标签（`background: #f0f2f5; color: #333; padding: 4px 12px; border-radius: 16px; margin: 4px;`）
+       - 若无数据，显示提示：`暂未解析简历，请先上传并解析`
+       - 加载时显示：`加载中...`
+
+2. 修改 `frontend/src/views/Enterprise.vue`（企业工作台）：
+   - **页面布局**（从上到下）：
+     - 顶部：欢迎语 + 企业标识
+     - 区域1：上传职位（已有，保持不变）
+     - 区域2：解析职位（已有，保持不变）
+     - **区域3（新增）：当前职位档案**
+       - 标题：`📋 当前职位档案`（使用深蓝 #1E3A8A）
+       - 自动加载当前企业最新职位数据（调用 `/api/profile/job`）
+       - 展示字段：
+         - 职位名称、学历要求、工作年限要求、工作城市
+         - 技能要求：使用与个人端相同的灰色标签样式
+       - 若无数据，显示：`暂未解析职位，请先上传并解析`
+
+3. 前端 API 封装（在 `api/` 目录下新增 `profile.js`）：
+```javascript
+import axios from 'axios'
+
+export const getResumeProfile = () => {
+  return axios.get('/api/profile/resume', { withCredentials: true })
+}
+
+export const getJobProfile = () => {
+  return axios.get('/api/profile/job', { withCredentials: true })
+}
+页面加载时自动调用 API：
+
+在 mounted() 或 onMounted() 中调用，将数据存入 reactive 或 ref 对象。
+
+解析成功后，将 parsedJson 字符串转为对象（使用 JSON.parse）再渲染。
+
+--- 🚨 硬性限制（绝对禁止违反） ---
+
+严禁修改登录页、注册页、上传、解析功能的任何逻辑和样式。
+
+严禁修改 user 表结构。
+
+严禁修改任何路由配置（router/index.js）。
+
+严禁使用 Element Plus、Ant Design 等 UI 库。
+
+严禁修改 application.yml 中的端口、数据库连接。
+
+必须保持与现有深蓝政务风格完全一致：
+
+主色：#1E3A8A
+
+卡片背景：白色
+
+卡片阴影：0 2px 8px rgba(0,0,0,0.08)
+
+字体颜色：深灰 #333
+
+标签背景：#f0f2f5
+
+请分别给出：
+
+后端的 ProfileController.java 完整代码
+
+后端的 ResumeService.java 和 ResumeServiceImpl.java 新增方法代码
+
+后端的 JobService.java 和 JobServiceImpl.java 新增方法代码
+
+前端的 Personal.vue 完整代码（含档案展示区域）
+
+前端的 Enterprise.vue 完整代码（含档案展示区域）
+
+前端 api/profile.js 文件代码
+
+text
+
+---
+
+## 🎯 预期效果（完成后的样子）
+
+### 个人端（Personal.vue）
+┌─────────────────────────────────────────────┐
+│ 👋 欢迎回来，张三 │
+│ ┌──────────────────────────────────────┐ │
+│ │ 📋 我的档案 │ │
+│ │ 姓名：张三 学历：本科 年限：5年 │ │
+│ │ 期望城市：成都 │ │
+│ │ 技能： [Java] [Spring] [MySQL] │ │
+│ └──────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────┐ │
+│ │ 上传简历区域（已有，不变） │ │
+│ └──────────────────────────────────────┘ │
+└─────────────────────────────────────────────┘
+
+text
+
+### 企业端（Enterprise.vue）
+┌─────────────────────────────────────────────┐
+│ 👋 欢迎回来，XX科技 │
+│ ┌──────────────────────────────────────┐ │
+│ │ 📋 当前职位档案 │ │
+│ │ 职位：Java开发工程师 学历：本科 │ │
+│ │ 年限：3年 城市：成都 │ │
+│ │ 技能要求： [Java] [微服务] [Redis] │ │
+│ └──────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────┐ │
+│ │ 上传职位区域（已有，不变） │ │
+│ └──────────────────────────────────────┘ │
+└─────────────────────────────────────────────┘
+
+text
+
+---
+
+## 🔍 验证步骤（完成后自检）
+
+1. **准备数据**：确保你已上传并解析过至少一份简历和一份职位。
+2. **登录个人账号**：访问 `/personal`，确认档案区域自动加载并正确显示姓名、学历、技能等。
+3. **登录企业账号**：访问 `/enterprise`，确认职位档案正确显示。
+4. **无数据测试**：如果某个账号从未上传过文件，应显示“暂未解析简历/职位”友好提示。
+5. **视觉检查**：确认卡片、标签、字体颜色与登录页和上传区域风格一致（深蓝主色、白色卡片、无渐变）。
+
+---
+
+## ⚠️ 常见问题预判
+
+| 问题 | 解决方案 |
+|------|---------|
+| `parsedJson` 是 `String`，前端解析报错 | 在 `JSON.parse()` 外层加 `try...catch`，解析失败时显示“数据格式异常” |
+| 页面加载时数据还未获取 | 使用 `v-if` 或 `v-loading` 状态，避免渲染空对象报错 |
+| 多个简历/职位只取最新一条 | 后端使用 `orderByDesc("create_time").last("LIMIT 1")` |
+| 前端样式与现有不一致 | 要求AI复用 `Personal.vue` 中的 `class` 命名，不要引入新类名 |
+
+---

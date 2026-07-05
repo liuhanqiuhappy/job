@@ -1,0 +1,210 @@
+【项目背景 - 接续 M6 匹配算法后端】
+项目已完成 M1~M6，当前状态：
+- 后端：SpringBoot 8080，匹配算法接口已就绪（`/api/match/calculate`、`/api/match/recommend/jobs`、`/api/match/recommend/candidates`）
+- 数据库：`resume` 和 `job` 表的 `parsed_json` 已有数据
+- 前端：Vue3 + Vite，已安装 ECharts 5（已在技术栈中确认）
+- UI规范：深蓝主色（#1E3A8A）、白色卡片、柔和阴影、无第三方UI库
+
+【本次任务：开发 M7 能力图谱可视化模块】
+请严格按照以下要求生成代码，严禁越界。
+
+--- 可视化设计规范（统一风格） ---
+1. 主色：#1E3A8A
+2. 辅助色：#1677FF（图表主色）、#52C41A（匹配度高）、#FAAD14（匹配度中）、#FF4D4F（匹配度低）
+3. 图表背景：白色卡片，阴影 0 2px 8px rgba(0,0,0,0.08)，圆角 8px
+4. 图表标题：深蓝 #1E3A8A，字号16px，加粗
+5. 图表字体：系统默认，颜色 #333
+
+--- 后端增强（提供图谱所需数据接口） ---
+虽然M6已提供匹配评分接口，但雷达图需要**能力维度评分**（如技术深度、项目经验、学历背景、稳定性、沟通协作），这些需要从简历解析数据中映射生成。请新增以下接口：
+
+1. 生成 `ProfileDimensionController.java`（放在 `com.match.controller` 包）：
+   - 提供 `GET /api/profile/dimensions/resume/{resumeId}`：
+     - 从 `resume` 表的 `parsed_json` 中读取数据
+     - 映射为5个维度评分（0-100）：
+       - 技术深度：根据技能数量映射（1个技能→20分，2→40，3→60，4→80，≥5→100）
+       - 项目经验：根据工作年限映射（0年→0，1年→20，2年→40，3年→60，5年→80，≥8年→100）
+       - 学历背景：高中→20，专科→40，本科→70，硕士→90，博士→100
+       - 稳定性：根据是否有gap或跳槽频率（简化：固定给70，或从文本中推断）
+       - 沟通协作：固定给80（或从文本中提取关键词，简化处理）
+     - 返回 `Result.success(DimensionResult)`
+   - 提供 `GET /api/profile/dimensions/job/{jobId}`：
+     - 类似地从职位解析数据中映射为5个维度需求评分
+
+2. 生成 `DimensionResult.java`（放在 `com.match.dto` 包）：
+   ```java
+   public class DimensionResult {
+       private Long id;
+       private String name;           // 名称（如"张三"或"Java工程师"）
+       private Double technicalDepth; // 技术深度 0-100
+       private Double projectExp;     // 项目经验 0-100
+       private Double educationBg;    // 学历背景 0-100
+       private Double stability;      // 稳定性 0-100
+       private Double communication;  // 沟通协作 0-100
+       private List<String> skillTags;// 技能标签列表（用于力导向图）
+   }
+--- 前端开发要求（Vue3 + ECharts + 原生HTML/CSS，保持深蓝政务风格） ---
+
+修改 frontend/src/views/Personal.vue（个人工作台）：
+
+在“我的档案”卡片下方，新增一个 “能力图谱” 区域，包含：
+
+两个图表并排（或上下排列）：
+
+左侧/上方：雷达图 - 展示个人能力5维评分（与职位需求对比，如果当前用户已关联一个职位，则叠加显示职位需求）
+
+右侧/下方：力导向图 - 展示个人技能与职位要求技能的关联网络（蓝色节点=个人技能，红色节点=职位要求技能，连线表示匹配）
+
+如果当前用户尚无匹配的职位，则只显示个人雷达图，并提示“暂无职位匹配，建议先查看推荐职位”
+
+数据获取：
+
+调用 /api/profile/dimensions/resume/{resumeId} 获取个人维度评分
+
+调用 /api/match/recommend/jobs 取第一条推荐职位，获取其 jobId，再调用 /api/profile/dimensions/job/{jobId} 获取职位维度
+
+如果推荐列表为空，则只显示个人雷达图
+
+新增 frontend/src/components/RadarChart.vue（ECharts雷达图组件）：
+
+Props：personalData（个人维度）、jobData（职位维度，可选）
+
+使用 ECharts 雷达图（radar 系列），展示5个维度：
+
+维度名称：技术深度、项目经验、学历背景、稳定性、沟通协作
+
+个人数据用 #1677FF 填充，职位数据用 #FAAD14（虚线）以示区分
+
+图例显示“个人能力”和“岗位要求”
+
+极坐标最大值均为100
+
+新增 frontend/src/components/ForceGraph.vue（力导向图组件）：
+
+Props：personalSkills（个人技能列表）、jobSkills（职位要求技能列表）
+
+构造节点：
+
+个人技能：蓝色圆形（#1677FF），标签显示技能名
+
+职位要求技能：红色菱形（#FF4D4F），标签显示技能名
+
+交集技能：同时拥有个人和职位标签，用绿色圆形（#52C41A）并加粗边框
+
+构造边：交集技能之间连线，以及个人技能→交集技能、职位技能→交集技能（用简单关系）
+
+使用 ECharts 力导向布局（graph 系列）
+
+如果技能列表为空，显示提示“暂无技能数据”
+
+修改 frontend/src/views/Enterprise.vue（企业工作台）：
+
+在“当前职位档案”卡片下方，新增 “职位能力图谱” 区域：
+
+显示该职位的雷达图（仅职位维度，不叠加个人）
+
+显示职位要求的技能力导向图（仅展示职位技能节点，橙色/红色）
+
+如果该企业未发布职位，显示提示“请先上传并解析职位”
+
+前端 API 封装（在 api/ 目录下新增 dimension.js）：
+
+javascript
+import axios from 'axios'
+
+export const getResumeDimensions = (resumeId) => {
+  return axios.get(`/api/profile/dimensions/resume/${resumeId}`, { withCredentials: true })
+}
+
+export const getJobDimensions = (jobId) => {
+  return axios.get(`/api/profile/dimensions/job/${jobId}`, { withCredentials: true })
+}
+组件化开发：将雷达图和力导向图分别封装为独立组件，便于复用。
+
+--- 🚨 硬性限制（绝对禁止违反） ---
+
+严禁修改登录、注册、上传、解析、档案展示、匹配算法的任何逻辑。
+
+严禁修改 user 表结构。
+
+严禁修改 application.yml 中的端口、数据库连接。
+
+严禁使用除 ECharts 5 之外的任何第三方图表库。
+
+严禁改动已有页面的布局结构（如上传、解析按钮位置），只能在下方新增图表区域。
+
+必须保持与现有深蓝政务风格完全一致：
+
+图表容器使用白色卡片背景 + 阴影 + 圆角
+
+标题使用深蓝 #1E3A8A
+
+字体颜色 #333
+
+若 ECharts 图表加载失败，必须有友好提示（如“图表加载失败，请刷新重试”）。
+
+请分别给出：
+
+后端新增的 ProfileDimensionController.java、DimensionResult.java 完整代码
+
+前端 RadarChart.vue 完整代码（含 ECharts 配置）
+
+前端 ForceGraph.vue 完整代码（含 ECharts 配置）
+
+修改后的 Personal.vue 完整代码（含图表区域）
+
+修改后的 Enterprise.vue 完整代码（含图表区域）
+
+前端 api/dimension.js 文件代码
+
+前端需要安装的依赖（如 echarts 已安装则无需额外操作）
+
+text
+
+---
+
+## 🎯 实现细节与图示说明
+
+### 雷达图示例（个人 vs 职位）
+技术深度
+沟通协作 ───●─────────── 个人能力
+╱ ╲ (蓝色填充)
+╱ ╲
+稳定性 ──●─────●── 职位需求
+╲ ╱ (橙色虚线)
+╲ ╱
+项目经验 ───●─────────── 学历背景
+
+text
+
+### 力导向图示例
+个人技能 (蓝色) 职位技能 (红色) 交集技能 (绿色)
+[Spring] ──── [Java] ──── [微服务]
+│ │
+[Redis] [Docker]
+│ │
+[MySQL] ──── [Linux]
+
+text
+连线表示技能关联（如简历包含Java和Spring，职位需要Spring和微服务，则Spring作为交集，连接两者）
+
+---
+
+## 🔍 验证步骤（完成后自检）
+
+1. **准备数据**：确保数据库中有至少一份简历和一份职位，且都已解析。
+2. **登录个人账号**：访问 `/personal`，查看“能力图谱”区域是否自动加载雷达图和力导向图。
+3. **登录企业账号**：访问 `/enterprise`，查看“职位能力图谱”是否显示职位雷达图和技能节点图。
+4. **无数据测试**：如果某个账号无简历或职位，应显示友好提示，而不是空白或报错。
+5. **视觉检查**：确认图表颜色、卡片样式与登录页和档案展示风格完全一致。
+
+---
+
+## ⚠️ 注意事项
+
+1. **ECharts 安装**：如果项目尚未安装 ECharts，需执行 `npm install echarts@5 --save`。
+2. **组件渲染时机**：确保在 `mounted` 或 `onMounted` 中初始化图表，并在数据变化时 `dispose` 旧图表再重新创建，避免内存泄漏。
+3. **响应式**：ECharts 图表需要监听窗口 `resize` 事件，调用 `chart.resize()`。
+4. **数据映射**：维度评分映射规则可先使用简单映射（如技能数量映射技术深度），后续可优化为更精细的规则。
+
+---

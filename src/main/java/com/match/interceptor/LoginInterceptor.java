@@ -16,6 +16,11 @@ public class LoginInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        String method = request.getMethod();
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            return true;
+        }
+        
         String uri = request.getRequestURI();
         
         if (uri.endsWith("/api/login") || uri.endsWith("/api/register")) {
