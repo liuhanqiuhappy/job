@@ -1,6 +1,16 @@
 D:\job\src\main\java\com\match\entity\Resume.java
-D:\job\src\main\java\com\match\entity\Job.java
+D:\job\src\main\java\com\match\controller\UploadController.java
 D:\job\src\main\java\com\match\MatchApplication.java
+D:\job\src\main\java\com\match\vo\UserVO.java
 D:\job\src\main\java\com\match\config\MyBatisPlusConfig.java
 D:\job\src\main\java\com\match\entity\User.java
+D:\job\src\main\java\com\match\mapper\UserMapper.java
+D:\job\src\main\java\com\match\service\UserService.java
 D:\job\src\main\java\com\match\common\Result.java
+D:\job\src\main\java\com\match\interceptor\LoginInterceptor.java
+D:\job\src\main\java\com\match\controller\UserController.java
+D:\job\src\main\java\com\match\entity\Job.java
+D:\job\src\main\java\com\match\mapper\ResumeMapper.java
+D:\job\src\main\java\com\match\service\impl\UserServiceImpl.java
+D:\job\src\main\java\com\match\config\WebMvcConfig.java
+D:\job\src\main\java\com\match\mapper\JobMapper.java

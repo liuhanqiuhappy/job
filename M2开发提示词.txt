@@ -1,0 +1,44 @@
+【项目背景 - 接续 M1 基建】
+我是 SpringBoot + Vue3 新手，正在开发招聘匹配平台比赛项目。
+M1 已彻底完成并通过 Git 提交：SpringBoot (端口8080) + MyBatis-Plus + MySQL 已成功启动，数据库连接正常。
+现有的实体类：`com.match.entity.User`（字段：id, username, password, role, phone, city），`Resume` 和 `Job` 实体类已存在但暂未使用。
+现有的统一返回类：`com.match.common.Result`（格式：{code:0, msg:"", data:{}}）。
+
+【本次任务：开发 M2 双角色登录与注册模块】
+请严格按照以下要求生成代码，严禁越界。
+
+--- 后端开发要求（Java） ---
+1. 包路径：`com.match.controller`、`com.match.service`、`com.match.mapper`。
+2. 生成 `UserMapper.java`：继承 MyBatis-Plus 的 `BaseMapper<User>`，无需写任何额外SQL。
+3. 生成 `UserService.java` 及其实现类 `UserServiceImpl.java`：
+   - 提供 `User findByUsername(String username)` 方法。
+   - 提供 `boolean saveUser(User user)` 方法（密码暂存明文，无需加密）。
+4. 生成 `UserController.java`，提供两个接口：
+   - `POST /api/login`：接收 username 和 password。校验通过后，将 `userId` 和 `role` 存入 `HttpSession`，返回 `Result.success(user对象)`；失败返回 `Result.error("账号或密码错误")`。
+   - `POST /api/register`：接收 User 对象（含 username, password, role, phone, city）。校验用户名唯一性，通过后存入数据库，返回 `Result.success("注册成功")`。
+5. 生成 `WebConfig.java`（放在 `com.match.config` 包下）：实现 `WebMvcConfigurer`，添加 CORS 跨域配置，允许前端（假设运行在 http://localhost:5173）访问后端接口，允许携带凭证（allowCredentials(true)）。
+
+--- 前端开发要求（Vue3 + 原生HTML/CSS） ---
+假设你的 Vue3 项目在 `frontend/` 文件夹下，使用 Vite 构建。
+1. 生成 `src/views/Login.vue`：
+   - 顶部有 Tab 切换：“个人登录” 和 “企业登录”（仅改变视觉高亮，登录接口逻辑不变，因为后端通过 role 字段区分）。
+   - 表单：用户名输入框、密码输入框、登录按钮。
+   - 下方有“去注册”跳转链接。
+   - 登录成功后，根据后端返回的 role（0跳 `/personal`，1跳 `/enterprise`），使用 `router.push` 跳转。
+2. 生成 `src/views/Register.vue`：
+   - 表单：用户名、密码、手机号、城市、角色选择（个人/企业 下拉框或单选框）。
+   - 注册按钮，注册成功后跳转回 `/login`。
+3. 生成 `src/router/index.js` 路由配置（如果不存在则创建）：
+   - 路由：`/login`、`/register`、`/personal`（占位）、`/enterprise`（占位）。
+   - 配置 `createWebHistory` 模式。
+4. 生成 `src/main.js` 或 `src/main.ts` 的配置（确保挂载了路由和App.vue）。
+   - 注意：登录页/注册页不要有复杂的UI库，请用 原生 `<input>` 和 `<button>` 标签，并手动写简单的 CSS（居中卡片样式即可）。
+
+--- 🚨 硬性限制（绝对禁止违反，否则视为无效代码） ---
+1. **严禁修改 `Resume` 和 `Job` 实体类、表或 Mapper**（本次只操作 `user` 表）。
+2. **严禁引入 Spring Security 或任何加密框架**（密码直接明文存，别自作聪明加 BCrypt）。
+3. **严禁生成任何文件上传、文档解析、匹配算法的代码**（那是 M3 之后的事）。
+4. **严禁使用 Element Plus、Ant Design 等 UI 框架**（只用原生 HTML + CSS，确保依赖最简）。
+5. **严禁改动 `application.yml` 中的数据库连接和端口配置**。
+
+请分别给出清晰的代码块，标注文件路径（例如：`backend/src/main/java/com/match/controller/UserController.java` 和 `frontend/src/views/Login.vue`），并给出简要的启动步骤提示。

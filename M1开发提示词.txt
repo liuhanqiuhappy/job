@@ -1,0 +1,148 @@
+第一步：让 Trae 生成后端骨架（pom.xml + application.yml）
+复制下面这段提示词，粘贴到 Trae 对话框，让它只生成配置文件：
+
+【复制以下内容给 Trae】
+
+【M1-阶段1：项目骨架与配置】
+
+我是 SpringBoot + Vue3 新手。请帮我生成比赛项目的后端基础骨架。
+
+技术版本要求：
+
+Spring Boot：2.7.18（稳定且对国产环境友好）
+
+Java版本：JDK 8 或 11
+
+构建工具：Maven
+
+1. 请生成 pom.xml，必须包含以下依赖：
+
+spring-boot-starter-web
+
+mybatis-plus-boot-starter（版本 3.5.3.1）
+
+mysql-connector-java（版本 8.0.33）
+
+lombok（版本 1.18.30）
+
+spring-boot-starter-validation
+
+2. 请生成 application.yml（放在 src/main/resources/），配置要求：
+
+端口：8080
+
+数据库连接：jdbc:mysql://localhost:3306/match_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+
+用户名：root，密码：123456（后期可改）
+
+MyBatis-Plus 开启日志（log-impl: org.apache.ibatis.logging.stdout.StdOutImpl）
+
+3. 限制（绝对禁止）：
+
+不要生成任何 Java 实体类和 Controller（等阶段2再做）。
+
+只输出 pom.xml 和 application.yml 的完整代码。
+
+请直接给出代码，不要额外解释。
+
+第二步：让 Trae 生成 SQL 建表语句 + 统一返回类
+复制下面这段提示词，在同一个对话框接着发送（或者新建对话框发送，但开头带上“基于刚才的Maven项目”）：
+
+【复制以下内容给 Trae】
+
+【M1-阶段2：数据库设计与统一返回类】
+
+基于刚才的 SpringBoot 项目，请帮我完成数据库设计和基础工具类。
+
+1. 请生成 SQL 建表语句（MySQL 5.7+ 语法），数据库名为 match_db，包含以下 3 张表：
+
+表1：user（用户表）
+
+id BIGINT 自增主键
+
+username VARCHAR(50) 唯一 非空
+
+password VARCHAR(100) 非空（存加密后的密文，暂时用明文模拟）
+
+role TINYINT 非空（0=个人，1=企业）
+
+phone VARCHAR(20)
+
+city VARCHAR(50)
+
+create_time DATETIME 默认 CURRENT_TIMESTAMP
+
+表2：resume（简历表）
+
+id BIGINT 自增主键
+
+user_id BIGINT 非空（关联 user.id）
+
+file_path VARCHAR(500)（M3上传时存路径）
+
+parsed_json JSON（M4解析后存结构化数据）
+
+create_time DATETIME 默认 CURRENT_TIMESTAMP
+
+表3：job（职位表）
+
+id BIGINT 自增主键
+
+user_id BIGINT 非空（关联 user.id，发布该职位的企业）
+
+file_path VARCHAR(500)
+
+parsed_json JSON
+
+create_time DATETIME 默认 CURRENT_TIMESTAMP
+
+2. 请生成 com.match.common.Result 统一返回类：
+
+泛型类，包含 private Integer code; private String msg; private T data;
+
+提供静态成功方法：public static <T> Result<T> success(T data)（code=0, msg="成功"）
+
+提供静态失败方法：public static <T> Result<T> error(String msg)（code=500）
+
+3. 限制（绝对禁止）：
+
+严禁生成 Controller、Service、Mapper。
+
+只输出 SQL 语句和 Result.java 代码。
+
+请直接给出代码，不要额外解释。
+
+第三步：让 Trae 生成 MyBatis-Plus 基础配置 + 实体类占位
+复制下面这段提示词，接着发过去：
+
+【复制以下内容给 Trae】
+
+【M1-阶段3：MyBatis-Plus配置与基础实体】
+
+请帮我完成 MyBatis-Plus 的配置类和基础实体类（暂时只建骨架，不写业务）。
+
+1. 请生成 com.match.config.MyBatisPlusConfig 配置类：
+
+使用 @MapperScan("com.match.mapper") 扫描包
+
+配置分页插件（PaginationInnerInterceptor），方便后续做推荐列表分页。
+
+2. 请生成 3 个实体类（Entity），放在 com.match.entity 包下：
+
+User.java（对应 user 表，字段用 @TableId(type = IdType.AUTO)）
+
+Resume.java（对应 resume 表）
+
+Job.java（对应 job 表）
+
+注意：parsed_json 字段用 String 类型接收（因为 MyBatis-Plus 操作 JSON 字段时，用 String 最稳妥，后续在 Service 层手动转 Map）。
+
+所有实体类加 @Data 和 @TableName 注解。
+
+3. 限制（绝对禁止）：
+
+严禁生成 Mapper 接口和 Service（留到 M2 再做）。
+
+严禁生成 Controller。
+
+请直接给出代码，不要额外解释。

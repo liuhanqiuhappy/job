@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-MatchApplication<itms>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.match.MatchApplication",
+            "projectName": "itms",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
