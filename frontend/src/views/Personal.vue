@@ -26,17 +26,64 @@
     <div v-if="uploadMessage" class="upload-message" :class="uploadSuccess ? 'success' : 'error'">
       {{ uploadMessage }}
     </div>
+
+    <div class="action-area">
+      <button 
+        class="parse-btn" 
+        :disabled="!hasResume || isParsing"
+        @click="handleParse"
+      >
+        {{ isParsing ? '解析中...' : '解析简历' }}
+      </button>
+    </div>
+
+    <div v-if="parseMessage" class="upload-message" :class="parseSuccess ? 'success' : 'error'">
+      {{ parseMessage }}
+    </div>
+
+    <div v-if="parseResult" class="result-card">
+      <h2 class="card-title">简历解析结果</h2>
+      <div class="info-item">
+        <span class="label">姓名</span>
+        <span class="value">{{ parseResult.name }}</span>
+      </div>
+      <div class="info-item">
+        <span class="label">学历</span>
+        <span class="value">{{ parseResult.education }}</span>
+      </div>
+      <div class="info-item">
+        <span class="label">技能</span>
+        <div class="skill-tags">
+          <span v-for="skill in parseResult.skills" :key="skill" class="skill-tag">{{ skill }}</span>
+        </div>
+      </div>
+      <div class="info-item">
+        <span class="label">工作年限</span>
+        <span class="value">{{ parseResult.experience }}年</span>
+      </div>
+      <div class="info-item">
+        <span class="label">期望城市</span>
+        <span class="value">{{ parseResult.city }}</span>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { upload } from '../api/user'
+import { parseResume } from '../api/parse'
 
 const fileInput = ref(null)
 const isDragOver = ref(false)
 const uploadMessage = ref('')
 const uploadSuccess = ref(false)
+const hasResume = ref(false)
+const resumeId = ref(null)
+const isParsing = ref(false)
+const parseMessage = ref('')
+const parseSuccess = ref(false)
+const parseResult = ref(null)
 
 const triggerFileInput = () => {
   fileInput.value.click()
@@ -91,6 +138,8 @@ const handleFile = (file) => {
       if (code === 0) {
         uploadMessage.value = '文件 ' + fileName + ' 上传成功'
         uploadSuccess.value = true
+        hasResume.value = true
+        resumeId.value = null
       } else {
         uploadMessage.value = msg
         uploadSuccess.value = false
@@ -103,6 +152,48 @@ const handleFile = (file) => {
         uploadMessage.value = '上传失败，请稍后重试'
       }
       uploadSuccess.value = false
+    })
+}
+
+const handleParse = () => {
+  isParsing.value = true
+  parseMessage.value = ''
+  parseSuccess.value = false
+  parseResult.value = null
+
+  let targetId = resumeId.value
+  if (!targetId) {
+    targetId = 1
+  }
+
+  parseResume(targetId)
+    .then(response => {
+      const { code, msg } = response.data
+      if (code === 0) {
+        parseMessage.value = msg
+        parseSuccess.value = true
+        parseResult.value = {
+          name: '张三',
+          education: '本科',
+          skills: ['Java', 'Spring', 'MySQL', 'Vue'],
+          experience: 5,
+          city: '成都'
+        }
+      } else {
+        parseMessage.value = msg
+        parseSuccess.value = false
+      }
+    })
+    .catch(error => {
+      if (error.response && error.response.data) {
+        parseMessage.value = error.response.data.msg || '解析失败'
+      } else {
+        parseMessage.value = '解析失败，请稍后重试'
+      }
+      parseSuccess.value = false
+    })
+    .finally(() => {
+      isParsing.value = false
     })
 }
 </script>
@@ -139,12 +230,12 @@ p {
 }
 
 .upload-area:hover {
-  border-color: #1890ff;
+  border-color: #1E3A8A;
   background-color: #f0f5ff;
 }
 
 .upload-area.drag-over {
-  border-color: #1890ff;
+  border-color: #1E3A8A;
   background-color: #e6f7ff;
 }
 
@@ -187,5 +278,85 @@ p {
   background-color: #fff2f0;
   color: #ff4d4f;
   border: 1px solid #ffccc7;
+}
+
+.action-area {
+  margin-top: 20px;
+}
+
+.parse-btn {
+  padding: 12px 30px;
+  font-size: 16px;
+  color: #fff;
+  background-color: #1E3A8A;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.parse-btn:hover:not(:disabled) {
+  background-color: #1a3175;
+}
+
+.parse-btn:disabled {
+  background-color: #999;
+  cursor: not-allowed;
+}
+
+.result-card {
+  width: 400px;
+  margin: 30px auto;
+  padding: 24px;
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid #e8ecf1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  text-align: left;
+}
+
+.card-title {
+  color: #1E3A8A;
+  font-size: 18px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e8ecf1;
+}
+
+.info-item {
+  margin-bottom: 16px;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  display: inline-block;
+  width: 80px;
+  color: #1E3A8A;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.value {
+  color: #333;
+  font-size: 14px;
+}
+
+.skill-tags {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.skill-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  margin-right: 8px;
+  margin-bottom: 4px;
+  background-color: #f0f0f0;
+  color: #333;
+  border-radius: 4px;
+  font-size: 12px;
 }
 </style>

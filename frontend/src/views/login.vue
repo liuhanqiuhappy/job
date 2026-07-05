@@ -1,8 +1,14 @@
 <template>
   <div class="login-container">
-    <div class="login-box">
-      <h2>智汇人才匹配系统</h2>
-      
+    <div class="login-card">
+      <div class="brand-section">
+        <div class="logo-wrapper">
+          <span class="logo-icon">👤</span>
+        </div>
+        <h1>智汇人才匹配系统</h1>
+        <p class="subtitle">省级人才智慧匹配平台</p>
+      </div>
+
       <div class="role-tabs">
         <button 
           :class="['tab', role === 0 ? 'active' : '']"
@@ -97,102 +103,181 @@ const handleLogin = async () => {
 
 <style scoped>
 .login-container {
+  --primary-color: #1677ff;
+  --primary-hover: #0958d9;
+  --bg-color: #f5f7fa;
+  --card-bg: #ffffff;
+  --text-primary: #333333;
+  --text-secondary: #6b7280;
+  --border-color: #d9d9d9;
+  --border-radius-sm: 8px;
+  --border-radius-md: 16px;
+
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: var(--bg-color);
   margin: 0;
-  padding: 0;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-.login-box {
-  background: white;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  width: 400px;
+.login-card {
+  background-color: var(--card-bg);
+  padding: 56px 44px;
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  width: 420px;
+  max-width: 90vw;
 }
 
-h2 {
+.brand-section {
   text-align: center;
-  margin-bottom: 30px;
-  color: #333;
+  margin-bottom: 36px;
+}
+
+.logo-wrapper {
+  width: 72px;
+  height: 72px;
+  background-color: rgba(22, 119, 255, 0.1);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.logo-icon {
+  font-size: 36px;
+}
+
+h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 10px 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 .role-tabs {
   display: flex;
-  margin-bottom: 24px;
-  background: #f5f5f5;
-  border-radius: 8px;
+  margin-bottom: 32px;
+  background-color: #f5f5f5;
+  border-radius: var(--border-radius-sm);
   padding: 4px;
 }
 
 .tab {
   flex: 1;
-  padding: 10px;
+  padding: 12px;
   border: none;
-  background: transparent;
+  background-color: transparent;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   font-size: 14px;
+  color: var(--text-secondary);
 }
 
 .tab.active {
-  background: #409eff;
-  color: white;
+  background-color: var(--primary-color);
+  color: #ffffff;
+}
+
+.tab:hover:not(.active) {
+  background-color: rgba(22, 119, 255, 0.08);
 }
 
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 22px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
   font-size: 14px;
-  color: #333;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .form-group input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 15px;
+  color: var(--text-primary);
   box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #409eff;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
+}
+
+.form-group input::placeholder {
+  color: #9ca3af;
 }
 
 .login-btn {
   width: 100%;
-  padding: 12px;
-  background: #409eff;
-  color: white;
+  padding: 15px;
+  background-color: var(--primary-color);
+  color: #ffffff;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--border-radius-sm);
   font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .login-btn:hover {
-  background: #3088dd;
+  background-color: var(--primary-hover);
 }
 
 .register-link {
   text-align: center;
-  margin-top: 16px;
+  margin-top: 24px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .register-link a {
-  color: #409eff;
+  color: var(--primary-color);
   text-decoration: none;
+  font-weight: 500;
+}
+
+.register-link a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 40px 28px;
+    width: 100%;
+  }
+
+  h1 {
+    font-size: 22px;
+  }
+
+  .logo-wrapper {
+    width: 60px;
+    height: 60px;
+  }
+
+  .logo-icon {
+    font-size: 28px;
+  }
 }
 </style>

@@ -21,3 +21,12 @@ mybatis-plus:
     db-config:
       table-underline: true
       id-type: auto
+
+llm:
+  provider: local
+  local:
+    url: http://localhost:11434/api/generate
+    model: qwen2:7b
+  cloud:
+    api-key: your-api-key
+    url: https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
