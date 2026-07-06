@@ -6,7 +6,6 @@ import com.match.mapper.UserMapper;
 import com.match.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,8 +13,11 @@ public class UserServiceImpl implements UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
-    @Autowired
-    private UserMapper userMapper;
+    private final UserMapper userMapper;
+
+    public UserServiceImpl(UserMapper userMapper) {
+        this.userMapper = userMapper;
+    }
 
     @Override
     public User findByUsername(String username) {
@@ -39,5 +41,13 @@ public class UserServiceImpl implements UserService {
             logger.error("保存用户失败", e);
             throw e;
         }
+    }
+
+    @Override
+    public User findById(Long id) {
+        logger.info("根据ID查询用户: {}", id);
+        User user = userMapper.selectById(id);
+        logger.info("查询结果: {}", user != null ? "找到用户" : "未找到用户");
+        return user;
     }
 }

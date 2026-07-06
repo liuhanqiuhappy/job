@@ -23,7 +23,11 @@ mybatis-plus:
       id-type: auto
 
 llm:
-  provider: local
+  provider: deepseek
+  deepseek:
+    api-key: sk-a9c395618be1440e9ed8b621ac27f25d
+    url: https://api.deepseek.com/v1/chat/completions
+    model: deepseek-chat
   local:
     url: http://localhost:11434/api/generate
     model: qwen2:7b

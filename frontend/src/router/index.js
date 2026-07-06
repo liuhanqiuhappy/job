@@ -22,6 +22,21 @@ const routes = [
     component: () => import('../views/Enterprise.vue')
   },
   {
+    path: '/recommend',
+    name: 'Recommend',
+    component: () => import('../views/Recommend.vue')
+  },
+  {
+    path: '/candidates',
+    name: 'Candidates',
+    component: () => import('../views/Candidates.vue')
+  },
+  {
+    path: '/intents',
+    name: 'IntentManagement',
+    component: () => import('../views/IntentManagement.vue')
+  },
+  {
     path: '/',
     redirect: '/login'
   }

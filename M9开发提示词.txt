@@ -1,0 +1,212 @@
+【项目背景 - 已完成 M1~M8 所有核心业务模块】
+项目已完成全部核心功能：
+- M1：基建与数据库设计
+- M2：双角色登录注册
+- M3：文档上传（本地存储）
+- M4：文档智能解析（大模型提取）
+- M5：档案结构化展示
+- M6：匹配算法后端（硬性条件 + Jaccard + 余弦相似度）
+- M7：能力图谱可视化（ECharts 雷达图 + 力导向图）
+- M8：双向推荐与意向沟通（意向书 + 邀约 + 联系方式解锁）
+
+当前状态：
+- 后端：SpringBoot 8080，所有业务接口已就绪
+- 前端：Vue3 + Vite，个人端和企业端功能完整
+- 数据库：user、resume、job、intent 四张表已有数据
+- UI规范：深蓝主色（#1E3A8A）、白色卡片、柔和阴影
+
+【本次任务：开发 M9 平台管理与监控后台】
+请严格按照以下要求生成代码，严禁越界。
+
+--- 数据库准备 ---
+请在 user 表中确认存在 role 字段（0=个人，1=企业）。如需区分管理员，可在应用层定义 role=2 为管理员（无需修改表结构，通过配置文件或常量类定义）。
+
+--- 后端开发要求（Java） ---
+
+1. 生成 AdminController.java（放在 com.match.controller 包）：
+   提供以下管理接口（所有接口均需校验当前用户是否为管理员）：
+   - GET /api/admin/users：
+     - 查询所有用户列表（含分页），返回 User 信息（脱敏，不返回 password）
+     - 支持按用户名、角色、注册时间筛选
+
+   - GET /api/admin/users/{userId}：
+     - 查询指定用户的详细信息（含其简历/职位数据）
+
+   - PUT /api/admin/users/{userId}/status：
+     - 启用/禁用用户账号（在 user 表新增 status 字段，0=正常，1=禁用）
+     - 接收参数：status（0或1）
+
+   - DELETE /api/admin/users/{userId}：
+     - 删除用户（软删除，在 user 表新增 deleted 字段，0=未删除，1=已删除）
+
+   - GET /api/admin/statistics：
+     - 获取平台运营统计概览：
+       - 用户总数（个人/企业分别统计）
+       - 简历总数
+       - 职位总数
+       - 意向总数（按状态分组：待回应/已接受/已拒绝）
+       - 今日新增用户数
+       - 今日上传文件数
+       - 大模型调用次数（可在 ParseServiceImpl 中计数）
+
+   - GET /api/admin/parse-logs：
+     - 获取文档解析日志列表（含分页）
+     - 包含：文件名、解析时间、解析状态（成功/失败）、错误信息（如有）
+
+   - GET /api/admin/activities：
+     - 获取最近操作日志（如登录、上传、解析、匹配等）
+     - 用于监控面板的实时动态展示
+
+2. 增强 User.java 实体类：
+   - 新增 status 字段（Integer，默认 0）
+   - 新增 deleted 字段（Integer，默认 0）
+
+3. 新增 AdminAuthInterceptor.java（放在 com.match.interceptor 包）：
+   - 实现 HandlerInterceptor，在 AdminController 的所有接口前进行拦截
+   - 从 Session 获取当前用户，校验 role 是否为 2（管理员）
+   - 如果不是管理员，返回 Result.error("无权限访问")
+
+4. 在 WebConfig.java 中注册 AdminAuthInterceptor：
+   - 添加拦截器，拦截路径为 /api/admin/**
+
+5. 生成 ParseLogService.java 及其实现类：
+   - 记录每次文档解析的日志（文件名、解析时间、状态、错误信息）
+   - 存储在数据库 parse_log 表中（需新建表）
+
+6. 新增 parse_log 表（SQL 建表语句）：
+   CREATE TABLE parse_log (
+     id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+     file_name VARCHAR(200) NOT NULL COMMENT '文件名',
+     file_type VARCHAR(20) NOT NULL COMMENT '文件类型（resume/job）',
+     user_id BIGINT NOT NULL COMMENT '操作人ID',
+     user_name VARCHAR(50) COMMENT '操作人姓名',
+     status TINYINT NOT NULL DEFAULT 0 COMMENT '状态：0=成功，1=失败',
+     error_msg VARCHAR(500) DEFAULT NULL COMMENT '错误信息',
+     parse_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '解析时间',
+     PRIMARY KEY (id),
+     KEY idx_user_id (user_id),
+     KEY idx_status (status)
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='解析日志表';
+
+--- 前端开发要求（Vue3 + 原生HTML/CSS，保持深蓝政务风格） ---
+
+1. 新增 frontend/src/views/AdminLogin.vue（管理员登录页）：
+   - 复用现有登录页样式（深蓝主色）
+   - 登录接口复用 /api/login，但只允许 role=2 的管理员登录
+   - 登录成功后跳转 /admin/dashboard
+
+2. 新增 frontend/src/views/AdminLayout.vue（管理员后台布局）：
+   - 左侧：垂直菜单（深蓝背景 #1E3A8A）
+     - 📊 数据概览
+     - 👤 用户管理
+     - 📄 解析日志
+     - ⚙️ 系统配置
+   - 右侧：内容区（白色背景），顶部显示管理员信息和退出按钮
+
+3. 新增 frontend/src/views/admin/Dashboard.vue（数据概览页面）：
+   - 路由：/admin/dashboard
+   - 顶部统计卡片（4个一行）：
+     - 总用户数、总简历数、总职位数、总意向数
+     - 每个卡片使用深蓝主色图标，背景白色，数字醒目
+   - 第二行：图表区域
+     - 使用 ECharts 柱状图展示"近7天用户增长趋势"
+     - 使用 ECharts 饼图展示"意向状态分布"（待回应/已接受/已拒绝）
+   - 第三行：最近操作动态列表（滚动显示最新10条活动）
+
+4. 新增 frontend/src/views/admin/UserManagement.vue（用户管理页面）：
+   - 路由：/admin/users
+   - 顶部筛选栏：用户名搜索、角色下拉筛选
+   - 表格展示用户列表（ID、用户名、角色、手机号、城市、状态、注册时间、操作）
+   - 操作列：禁用/启用按钮、查看详情按钮
+   - 分页功能
+
+5. 新增 frontend/src/views/admin/ParseLogs.vue（解析日志页面）：
+   - 路由：/admin/parse-logs
+   - 表格展示解析日志（文件名、文件类型、操作人、状态、错误信息、解析时间）
+   - 支持按状态（成功/失败）筛选
+   - 分页功能
+
+6. 新增 frontend/src/views/admin/SystemConfig.vue（系统配置页面）：
+   - 路由：/admin/system-config
+   - 展示当前系统配置：
+     - 大模型服务状态（本地/云端，调用 /api/admin/llm/status）
+     - 文件存储路径
+     - 匹配算法版本
+   - 提供"刷新缓存"按钮（调用 /api/admin/cache/clear）
+
+7. 修改 frontend/src/router/index.js：
+   - 新增路由（管理员专用）：
+     - /admin/login → AdminLogin.vue
+     - /admin/dashboard → Dashboard.vue
+     - /admin/users → UserManagement.vue
+     - /admin/parse-logs → ParseLogs.vue
+     - /admin/system-config → SystemConfig.vue
+   - 路由守卫：进入 /admin/* 前检查 Session 中 role 是否为 2
+
+8. 前端 API 封装（api/admin.js）：
+   - getUserList(params)、getUserDetail(userId)、updateUserStatus(userId, status)
+   - getStatistics()、getParseLogs(params)、getActivities()
+   - getLLMStatus()、clearCache()
+
+--- 🚨 硬性限制（绝对禁止违反） ---
+1. 严禁修改个人端和企业端的任何功能（登录、注册、上传、解析、档案、匹配、图谱、推荐、意向）
+2. 严禁修改用户表已有字段（只能新增 status 和 deleted 字段）
+3. 严禁修改 application.yml 中的端口、数据库连接
+4. 严禁使用 Element Plus、Ant Design 等 UI 库
+5. 管理员账号需手动在数据库插入（如 INSERT INTO user VALUES (..., role=2)）
+6. 必须保持深蓝（#1E3A8A）政务风格，与现有页面完全一致
+7. 所有图表使用 ECharts 5，复用 M7 中已安装的依赖
+
+请分别给出：
+1. parse_log 表的 SQL 建表语句
+2. 更新后的 User.java 实体类（新增 status 和 deleted 字段）
+3. 后端的 AdminController.java、AdminAuthInterceptor.java、ParseLogService.java 及其实现类完整代码
+4. 更新后的 WebConfig.java（注册拦截器）
+5. 前端的 AdminLogin.vue、AdminLayout.vue、Dashboard.vue、UserManagement.vue、ParseLogs.vue、SystemConfig.vue 完整代码
+6. 更新后的 router/index.js 路由配置
+7. 前端 api/admin.js 文件代码
+管理员操作流程
+初始化管理员账号
+sql
+INSERT INTO user (username, password, role, phone, city, email, status, deleted) 
+VALUES ('admin', '123456', 2, '13800000000', '成都', 'admin@match.com', 0, 0);
+管理员日常操作
+访问 /admin/login，输入管理员账号密码登录
+
+进入 Dashboard，查看平台运营数据概览
+
+进入用户管理，搜索、禁用/启用用户
+
+进入解析日志，查看文档解析成功/失败记录
+
+进入系统配置，查看大模型状态、刷新缓存
+
+🔍 验证步骤
+执行 parse_log 表建表语句
+
+在 user 表新增 status 和 deleted 字段
+
+手动插入一条管理员账号（role=2）
+
+启动后端，访问 /admin/login
+
+输入管理员账号密码登录，成功跳转 /admin/dashboard
+
+查看 Dashboard 统计卡片和图表是否正确显示
+
+进入用户管理，搜索用户，禁用/启用操作
+
+进入解析日志，查看日志列表
+
+确认所有页面样式与深蓝政务风格一致
+
+⚠️ 注意事项
+拦截器配置：确保 AdminAuthInterceptor 正确拦截 /api/admin/** 路径，且放行 /api/admin/login 用于管理员登录验证
+
+权限校验：所有管理接口必须校验 role=2，防止普通用户越权访问
+
+统计接口性能：统计接口涉及多表查询，可使用 MyBatis-Plus 的 selectCount 方法，避免加载全表数据
+
+日志记录时机：在 ParseServiceImpl 中解析成功或失败时，调用 ParseLogService.recordLog() 记录
+
+Git 提交：M9 跑通后执行 git add . && git commit -m "M9 平台管理与监控后台完成，项目全部模块交付"

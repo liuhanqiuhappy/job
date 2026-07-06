@@ -55,6 +55,15 @@
           </div>
         </div>
         <div v-else class="empty-text">暂无职位匹配，建议先查看推荐职位</div>
+        
+        <div class="quick-links">
+          <router-link to="/recommend" class="quick-link">
+            📋 查看推荐职位
+          </router-link>
+          <router-link to="/intents" class="quick-link">
+            💬 我的意向
+          </router-link>
+        </div>
       </div>
     </div>
     
@@ -585,8 +594,34 @@ p {
   margin-bottom: 12px;
 }
 
+.quick-links {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e8ecf1;
+}
+
+.quick-link {
+  padding: 8px 20px;
+  background-color: #1E3A8A;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.quick-link:hover {
+  background-color: #1a3175;
+}
+
 @media (max-width: 768px) {
   .graph-content {
+    flex-direction: column;
+  }
+  
+  .quick-links {
     flex-direction: column;
   }
 }

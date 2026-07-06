@@ -5,7 +5,6 @@ import com.match.entity.Resume;
 import com.match.mapper.ResumeMapper;
 import com.match.service.ResumeService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,8 +13,11 @@ import java.util.List;
 @Service
 public class ResumeServiceImpl implements ResumeService {
 
-    @Autowired
-    private ResumeMapper resumeMapper;
+    private final ResumeMapper resumeMapper;
+
+    public ResumeServiceImpl(ResumeMapper resumeMapper) {
+        this.resumeMapper = resumeMapper;
+    }
 
     @Override
     public Resume getById(Long id) {

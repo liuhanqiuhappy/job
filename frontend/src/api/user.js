@@ -36,7 +36,8 @@ export function upload(file, type) {
   formData.append('file', file)
   formData.append('type', type)
   return service.post('/upload', formData, {
-    timeout: 30000
+    timeout: 30000,
+    withCredentials: true
   })
 }
 
