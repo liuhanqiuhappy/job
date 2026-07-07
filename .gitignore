@@ -1,0 +1,17 @@
+# 编译产物
+/target/
+*.class
+*.jar
+*.war
+
+# 上传文件目录
+/uploads/
+
+# IDE配置
+.idea/
+*.iml
+.vscode/
+
+# 前端依赖
+/frontend/node_modules/
+/frontend/dist/
