@@ -1,5 +1,8 @@
 <template>
-  <div class="candidates-page">
+<div class="app-layout">
+    <AppSidebar :user-info="userInfo" />
+    <div class="app-main">
+      <div class="candidates-page">
     <h1 class="page-title">📋 智能候选人推荐</h1>
     
     <div v-if="isLoading" class="loading-text">加载中...</div>
@@ -74,12 +77,18 @@
       {{ messageText }}
     </div>
   </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import AppSidebar from '../components/AppSidebar.vue'
 import { service } from '../api/user'
 import { sendIntent } from '../api/intent'
+const router = useRouter()
+const userInfo = ref(null)
 
 const isLoading = ref(true)
 const candidateList = ref([])
@@ -92,7 +101,7 @@ const messageType = ref('success')
 
 const loadRecommendCandidates = () => {
   isLoading.value = true
-  axios.get('/api/match/recommend/candidates', { withCredentials: true })
+  service.get('/match/recommend/candidates')
     .then(response => {
       const { code, data } = response.data
       if (code === 0 && data) {
@@ -220,6 +229,11 @@ const submitInvite = () => {
 }
 
 onMounted(() => {
+  const stored = localStorage.getItem('userInfo')
+  if (stored) {
+    try { userInfo.value = JSON.parse(stored) } catch { userInfo.value = null }
+  }
+  if (!userInfo.value) { router.push('/login') }
   loadRecommendCandidates()
 })
 </script>
@@ -514,4 +528,6 @@ onMounted(() => {
   color: #ff4d4f;
   border: 1px solid #ffccc7;
 }
+.app-layout { display: flex; min-height: 100vh; }
+.app-main { margin-left: 220px; flex: 1; min-height: 100vh; }
 </style>

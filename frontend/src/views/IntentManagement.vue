@@ -1,5 +1,8 @@
 <template>
-  <div class="intent-page">
+<div class="app-layout">
+    <AppSidebar :user-info="userInfo" />
+    <div class="app-main">
+      <div class="intent-page">
     <h1 class="page-title">💬 我的意向</h1>
     
     <div class="tab-container">
@@ -116,11 +119,17 @@
       {{ messageText }}
     </div>
   </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import AppSidebar from '../components/AppSidebar.vue'
 import { getMySentIntents, getMyReceivedIntents, acceptIntent, rejectIntent, getContactInfo } from '../api/intent'
+const router = useRouter()
+const userInfo = ref(null)
 
 const activeTab = ref('sent')
 const isLoading = ref(true)
@@ -273,6 +282,11 @@ const closeContactModal = () => {
 }
 
 onMounted(() => {
+  const stored = localStorage.getItem('userInfo')
+  if (stored) {
+    try { userInfo.value = JSON.parse(stored) } catch { userInfo.value = null }
+  }
+  if (!userInfo.value) { router.push('/login') }
   isLoading.value = true
   Promise.all([loadSentIntents(), loadReceivedIntents()])
     .finally(() => {
@@ -580,4 +594,6 @@ onMounted(() => {
   color: #ff4d4f;
   border: 1px solid #ffccc7;
 }
+.app-layout { display: flex; min-height: 100vh; }
+.app-main { margin-left: 220px; flex: 1; min-height: 100vh; }
 </style>

@@ -1,5 +1,8 @@
 <template>
-  <div class="recommend-page">
+<div class="app-layout">
+    <AppSidebar :user-info="userInfo" />
+    <div class="app-main">
+      <div class="recommend-page">
     <h1 class="page-title">📋 智能职位推荐</h1>
     
     <div v-if="isLoading" class="loading-text">加载中...</div>
@@ -71,12 +74,18 @@
       {{ messageText }}
     </div>
   </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import AppSidebar from '../components/AppSidebar.vue'
 import { service } from '../api/user'
 import { sendIntent } from '../api/intent'
+const router = useRouter()
+const userInfo = ref(null)
 
 const isLoading = ref(true)
 const recommendList = ref([])
@@ -200,6 +209,11 @@ const submitIntent = () => {
 }
 
 onMounted(() => {
+  const stored = localStorage.getItem('userInfo')
+  if (stored) {
+    try { userInfo.value = JSON.parse(stored) } catch { userInfo.value = null }
+  }
+  if (!userInfo.value) { router.push('/login') }
   loadRecommendJobs()
 })
 </script>
@@ -494,4 +508,6 @@ onMounted(() => {
   color: #ff4d4f;
   border: 1px solid #ffccc7;
 }
+.app-layout { display: flex; min-height: 100vh; }
+.app-main { margin-left: 220px; flex: 1; min-height: 100vh; }
 </style>

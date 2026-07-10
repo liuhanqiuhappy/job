@@ -1,5 +1,8 @@
 <template>
-  <div class="dashboard">
+<div class="app-layout">
+    <AppSidebar :user-info="userInfo" />
+    <div class="app-main">
+      <div class="dashboard">
     <h1>👋 欢迎回来，个人用户</h1>
     <p>您可以在这里上传简历并查看职位推荐</p>
 
@@ -132,10 +135,14 @@
       </div>
     </div>
   </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import AppSidebar from '../components/AppSidebar.vue'
 import axios from 'axios'
 import { upload } from '../api/user'
 import { parseResume } from '../api/parse'
@@ -143,6 +150,8 @@ import { getResumeProfile } from '../api/profile'
 import { getResumeDimensions, getJobDimensions } from '../api/dimension'
 import RadarChart from '../components/RadarChart.vue'
 import ForceGraph from '../components/ForceGraph.vue'
+const router = useRouter()
+const userInfo = ref(null)
 
 const fileInput = ref(null)
 const isLoading = ref(true)
@@ -367,6 +376,11 @@ const fetchRecommendJobs = () => {
 }
 
 onMounted(() => {
+  const stored = localStorage.getItem('userInfo')
+  if (stored) {
+    try { userInfo.value = JSON.parse(stored) } catch { userInfo.value = null }
+  }
+  if (!userInfo.value) { router.push('/login') }
   loadProfile()
 })
 </script>
@@ -625,4 +639,6 @@ p {
     flex-direction: column;
   }
 }
+.app-layout { display: flex; min-height: 100vh; }
+.app-main { margin-left: 220px; flex: 1; min-height: 100vh; }
 </style>
