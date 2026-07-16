@@ -13,11 +13,16 @@ import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
+import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,9 +38,15 @@ public class ParseServiceImpl implements ParseService {
         this.llmService = llmService;
     }
 
-    private static final String RESUME_PROMPT_TEMPLATE = "你是一个严格的信息提取工具。从以下简历文本中提取信息，只返回一个合法的JSON对象，不要包含任何其他文字、解释或markdown标记（如```json）。\n" +
-            "JSON格式必须为：{\"name\":\"姓名\", \"education\":\"学历\", \"skills\":[\"技能1\",\"技能2\"], \"experience\":数字(工作年限), \"city\":\"期望城市\"}。\n\n" +
-            "文本内容：\n{text}";
+    private static final String RESUME_PROMPT_TEMPLATE = "从以下简历文本中提取信息，只返回一个JSON对象，不要包含其他文字或标记。\n" +
+            "输出格式：{\"name\":\"姓名\",\"education\":\"学历\",\"skills\":[\"技能\"],\"experience\":数字,\"city\":\"城市\"}\n" +
+            "规则：\n" +
+            "1. name=姓名\n" +
+            "2. education=学历层次（本科/硕士/博士/大专），不要学校名\n" +
+            "3. skills=技能列表，每项独立\n" +
+            "4. experience=工作年数（仅正式工作，实习不算，没有填0）\n" +
+            "5. city=期望城市（未提及填\"不限\"）\n\n" +
+            "文本：\n{text}";
 
     private static final String JOB_PROMPT_TEMPLATE = "你是一个严格的信息提取工具。从以下职位描述中提取信息，只返回一个合法的JSON对象，不要包含任何其他文字、解释或markdown标记（如```json）。\n" +
             "JSON格式必须为：{\"title\":\"职位名\", \"eduReq\":\"学历要求\", \"skillReq\":[\"技能1\"], \"expReq\":数字, \"city\":\"城市\"}。\n\n" +
@@ -77,8 +88,17 @@ public class ParseServiceImpl implements ParseService {
     @Override
     public Map<String, Object> parseResume(String text) {
         log.info("开始解析简历");
+        log.info("开始解析简历");
         String prompt = RESUME_PROMPT_TEMPLATE.replace("{text}", text);
         Map<String, Object> result = callLLMAndParse(prompt);
+
+        // If LLM returned empty/invalid data, fall back to basic text extraction
+        Object nameObj = result.get("name");
+        Object eduObj = result.get("education");
+        if (nameObj == null || eduObj == null || nameObj.toString().contains("暂未") && eduObj.toString().contains("暂未")) {
+            log.info("LLM解析结果为空或无效，使用基础文本提取作为兜底");
+            result = fallbackParse(text);
+        }
         
         result.put("name", result.getOrDefault("name", "暂未提取到该信息"));
         result.put("education", result.getOrDefault("education", "暂未提取到该信息"));
@@ -186,19 +206,71 @@ public class ParseServiceImpl implements ParseService {
     }
 
     private String extractTextFromDocx(File file) throws IOException {
-        StringBuilder textBuilder = new StringBuilder();
         try (FileInputStream fis = new FileInputStream(file);
-             XWPFDocument document = new XWPFDocument(fis)) {
-            for (XWPFParagraph paragraph : document.getParagraphs()) {
-                for (XWPFRun run : paragraph.getRuns()) {
-                    textBuilder.append(run.getText(0));
-                }
-                textBuilder.append("\n");
+             XWPFDocument document = new XWPFDocument(fis);
+             XWPFWordExtractor extractor = new XWPFWordExtractor(document)) {
+            String text = extractor.getText();
+            log.info("DOCX文本提取完成，长度：{}", text.length());
+            return text;
+        }
+    }
+
+    private Map<String, Object> fallbackParse(String text) {
+        Map<String, Object> result = new HashMap<>();
+        log.info("使用基础文本提取作为兜底");
+
+        // Remove duplicate lines and normalize whitespace
+        Set<String> seen = new HashSet<>();
+        StringBuilder sb = new StringBuilder();
+        for (String line : text.split("\\n")) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty() && seen.add(trimmed)) {
+                sb.append(trimmed).append("\\n");
             }
         }
-        String text = textBuilder.toString();
-        log.info("DOCX文本提取完成，长度：{}", text.length());
-        return text;
+        String clean = sb.toString();
+
+        // Extract name using cross-line matching for "姓    名\\n：\\n张三" format
+        String name = null;
+        Pattern namePattern = Pattern.compile("姓\\s*名[\\s\\S]*?([\\u4e00-\\u9fa5]{2,4})");
+        Matcher nameMatcher = namePattern.matcher(clean);
+        if (nameMatcher.find()) {
+            String c = nameMatcher.group(1);
+            // Verify this is a name, not a section header
+            if (!c.contains("教") && !c.contains("技") && !c.contains("基") && !c.contains("自")) {
+                name = c;
+            }
+        }
+        result.put("name", name != null ? name : "暂未提取到该信息");
+
+        // Extract education: check for university + infer degree (本科 for 大学)
+        String edu = "暂未提取到该信息";
+        if (clean.contains("博士")) edu = "博士";
+        else if (clean.contains("硕士")) edu = "硕士";
+        else if (clean.contains("本科") || clean.contains("大学")) edu = "本科";
+        else if (clean.contains("大专")) edu = "大专";
+        result.put("education", edu);
+
+        // Extract skills from "技能：" line
+        List<String> skills = new ArrayList<>();
+        Pattern skillsPattern = Pattern.compile("技能[：:\\s]+([^\\n]+)");
+        Matcher skillsMatcher = skillsPattern.matcher(clean);
+        if (skillsMatcher.find()) {
+            String skillsText = skillsMatcher.group(1).trim();
+            for (String skill : skillsText.split("[、，,；;]")) {
+                String s = skill.trim().replaceAll("（[^）]*）", "").replaceAll("\\([^)]*\\)", "").trim();
+                if (!s.isEmpty() && s.length() > 1 && !s.matches("^\\d+$")) {
+                    skills.add(s);
+                }
+            }
+        }
+        result.put("skills", skills);
+
+        result.put("experience", 0);
+        result.put("city", "不限");
+
+        log.info("基础文本提取结果：{}", result);
+        return result;
     }
 
     private Map<String, Object> callLLMAndParse(String prompt) {
@@ -247,8 +319,8 @@ public class ParseServiceImpl implements ParseService {
             mock.put("expReq", 3);
             mock.put("city", "北京");
         }
-        log.info("【模拟数据返回】：{}", mock);
-        return mock;
+        log.warn("大模型API调用失败，返回空数据");
+        return new HashMap<>();
     }
 
     private String cleanJsonResponse(String raw) {

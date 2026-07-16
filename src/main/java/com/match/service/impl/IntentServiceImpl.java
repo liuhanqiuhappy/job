@@ -21,11 +21,20 @@ public class IntentServiceImpl implements IntentService {
 
     @Override
     public void sendIntent(Intent intent) {
-        logger.info("发送意向: fromUserId={}, toUserId={}, type={}", 
-                intent.getFromUserId(), intent.getToUserId(), intent.getType());
-        intent.setStatus(0);
-        intentMapper.insert(intent);
-        logger.info("意向发送成功: id={}", intent.getId());
+        logger.info("发送意向: fromUserId={}, toUserId={}, type={}, resumeId={}, jobId={}", 
+                intent.getFromUserId(), intent.getToUserId(), intent.getType(),
+                intent.getResumeId(), intent.getJobId());
+        try {
+            if (intent.getStatus() == null) {
+                intent.setStatus(0);
+            }
+            intentMapper.insert(intent);
+            logger.info("意向发送成功: id={}", intent.getId());
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("数据库插入意向异常: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Override
@@ -88,19 +97,25 @@ public class IntentServiceImpl implements IntentService {
     public boolean hasActiveIntent(Long fromUserId, Long toUserId, Long resumeId, Long jobId) {
         logger.info("检查是否已有待回应意向: fromUserId={}, toUserId={}, resumeId={}, jobId={}",
                 fromUserId, toUserId, resumeId, jobId);
-        QueryWrapper<Intent> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("from_user_id", fromUserId);
-        queryWrapper.eq("to_user_id", toUserId);
-        if (resumeId != null) {
-            queryWrapper.eq("resume_id", resumeId);
+        try {
+            QueryWrapper<Intent> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("from_user_id", fromUserId);
+            queryWrapper.eq("to_user_id", toUserId);
+            if (resumeId != null) {
+                queryWrapper.eq("resume_id", resumeId);
+            }
+            if (jobId != null) {
+                queryWrapper.eq("job_id", jobId);
+            }
+            queryWrapper.eq("status", 0);
+            Long count = intentMapper.selectCount(queryWrapper);
+            boolean exists = count > 0;
+            logger.info("检查结果: {}", exists);
+            return exists;
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("检查重复意向异常: {}", e.getMessage(), e);
+            return false;
         }
-        if (jobId != null) {
-            queryWrapper.eq("job_id", jobId);
-        }
-        queryWrapper.eq("status", 0);
-        Long count = intentMapper.selectCount(queryWrapper);
-        boolean exists = count > 0;
-        logger.info("检查结果: {}", exists);
-        return exists;
     }
 }

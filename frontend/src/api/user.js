@@ -3,7 +3,7 @@ import router from '../router'
 
 const service = axios.create({
   baseURL: '/api',
-  timeout: 5000,
+  timeout: 30000,
   withCredentials: true
 })
 
@@ -14,7 +14,7 @@ service.interceptors.response.use(
   error => {
     if (error.response && error.response.data) {
       const { code, msg } = error.response.data
-      if (code === 500 && msg === '未登录') {
+      if (code !== 0 && msg === '未登录') {
         localStorage.removeItem('userInfo')
         router.push('/login')
       }

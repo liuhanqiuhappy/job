@@ -1,56 +1,104 @@
-<template>
-  <div class="login-container">
-    <div class="login-card">
-      <div class="brand-section">
-        <div class="logo-wrapper">
-          <span class="logo-icon">👤</span>
+﻿<template>
+  <div class="login-page">
+    <nav class="top-nav">
+      <div class="nav-inner">
+        <div class="nav-left">
+          <span class="nav-logo">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <rect width="28" height="28" rx="6" fill="#1890ff"/>
+              <path d="M8 20V12L14 8L20 12V20H16V16H12V20H8Z" fill="white"/>
+            </svg>
+            智汇人才匹配系统
+          </span>
         </div>
-        <h1>智汇人才匹配系统</h1>
-        <p class="subtitle">省级人才智慧匹配平台</p>
+        <div class="nav-right">
+          <a href="/homepage" class="nav-item active">首页</a>
+          <a href="#intro" class="nav-item">项目介绍</a>
+          <a href="#features" class="nav-item">功能介绍</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="main-body">
+      <div class="carousel-section">
+        <div class="carousel-container">
+          <div class="carousel-track" :style="{ transform: `translateX(-${slideIdx * 100}%)` }">
+            <div v-for="(s, i) in slides" :key="i" class="carousel-slide" :style="{ background: s.bg }">
+              <div class="slide-overlay"></div>
+              <div class="slide-text">
+                <h2>{{ s.title }}</h2>
+                <p>{{ s.desc }}</p>
+              </div>
+            </div>
+          </div>
+          <button class="carousel-arrow left" @click="prevSlide">&lt;</button>
+          <button class="carousel-arrow right" @click="nextSlide">&gt;</button>
+          <div class="carousel-dots">
+            <span v-for="(_, i) in slides" :key="i" :class="['dot', { active: slideIdx === i }]" @click="slideIdx = i"></span>
+          </div>
+        </div>
       </div>
 
-      <div class="role-tabs">
-        <button 
-          :class="['tab', role === 0 ? 'active' : '']"
-          @click="role = 0"
-        >
-          个人用户
-        </button>
-        <button 
-          :class="['tab', role === 1 ? 'active' : '']"
-          @click="role = 1"
-        >
-          企业用户
-        </button>
-      </div>
+      <div class="login-section">
+        <div class="login-card">
+          <div class="login-header">
+            <div class="login-avatar">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <h2>用户登录</h2>
+          </div>
 
-      <div class="form-group">
-        <label>用户名</label>
-        <input type="text" v-model="form.username" placeholder="请输入用户名">
-      </div>
-      <div class="form-group">
-        <label>密码</label>
-        <input type="password" v-model="form.password" placeholder="请输入密码">
-      </div>
-      <div class="form-group">
-        <button class="login-btn" @click="handleLogin">登录</button>
-      </div>
+          <div class="role-tabs">
+            <button :class="['tab', role === 0 ? 'active' : '']" @click="role = 0">个人用户</button>
+            <button :class="['tab', role === 1 ? 'active' : '']" @click="role = 1">企业用户</button>
+          </div>
 
-      <p class="register-link">
-        还没有账号？<a href="/register">去注册</a>
-      </p>
+          <div class="form-group">
+            <label>用户名</label>
+            <input type="text" v-model="form.username" placeholder="请输入用户名">
+          </div>
+          <div class="form-group">
+            <label>密码</label>
+            <input type="password" v-model="form.password" placeholder="请输入密码">
+          </div>
+          <div class="form-group">
+            <button class="login-btn" @click="handleLogin">登 录</button>
+          </div>
+          <p class="register-link">
+            还没有账号？<a href="/register">立即注册 →</a>
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
-
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
 const router = useRouter()
 
 const role = ref(0)
+
+const slideIdx = ref(0)
+const slides = [
+  { title: '省级人才智慧匹配平台', desc: '依托 AI 技术，为企业和人才提供精准、高效的智能匹配服务', bg: '#1a1a2e' },
+  { title: '智能简历解析', desc: '上传简历即可自动提取教育背景、工作经验、技能特长等核心信息', bg: '#1890ff' },
+  { title: '精准人岗匹配', desc: '多维度能力画像分析，让每一份简历都能找到最适合的岗位', bg: '#096dd9' }
+]
+let slideTimer = null
+
+const nextSlide = () => { slideIdx.value = (slideIdx.value + 1) % slides.length }
+const prevSlide = () => { slideIdx.value = (slideIdx.value - 1 + slides.length) % slides.length }
+
+onMounted(() => {
+  slideTimer = setInterval(nextSlide, 4000)
+})
+
+onUnmounted(() => {
+  if (slideTimer) clearInterval(slideTimer)
+})
 
 const form = reactive({
   username: '',
@@ -87,11 +135,11 @@ const handleLogin = async () => {
   } catch (error) {
     console.error('登录失败:', error)
     if (error.response) {
-      console.error('响应状态:', error.response.status)
+      console.error('响应状态',  error.response.status)
       console.error('响应数据:', error.response.data)
       alert(error.response.data?.msg || '登录失败')
     } else if (error.request) {
-      console.error('请求已发送但无响应:', error.request)
+      console.error('请求已发送但无响应', error.request)
       alert('网络请求失败，请检查后端服务是否启动')
     } else {
       console.error('请求配置错误:', error.message)
@@ -100,184 +148,69 @@ const handleLogin = async () => {
   }
 }
 </script>
-
 <style scoped>
-.login-container {
-  --primary-color: #1677ff;
-  --primary-hover: #0958d9;
-  --bg-color: #f5f7fa;
+.login-page {
+  --primary: #1890ff;
+  --primary-hover: #40a9ff;
+  --primary-active: #096dd9;
+  --bg: #f0f2f5;
   --card-bg: #ffffff;
-  --text-primary: #333333;
-  --text-secondary: #6b7280;
-  --border-color: #d9d9d9;
-  --border-radius-sm: 8px;
-  --border-radius-md: 16px;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: var(--bg-color);
-  margin: 0;
-  padding: 20px;
+  --text: #262626;
+  --text-secondary: #595959;
+  --text-muted: #8c8c8c;
+  --border: #e8e8e8;
+  --radius: 8px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  min-height: 100vh;
+  background: var(--bg);
 }
 
-.login-card {
-  background-color: var(--card-bg);
-  padding: 56px 44px;
-  border-radius: var(--border-radius-md);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  width: 420px;
-  max-width: 90vw;
-}
+.top-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: #fff; border-bottom: 1px solid var(--border); height: 56px; }
+.nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 100%; display: flex; align-items: center; justify-content: space-between; }
+.nav-left { display: flex; align-items: center; }
+.nav-logo { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; color: var(--text); }
+.nav-right { display: flex; align-items: center; gap: 6px; }
+.nav-item { padding: 7px 16px; border-radius: var(--radius); font-size: 14px; color: var(--text-secondary); text-decoration: none; transition: all 0.2s; }
+.nav-item:hover { color: var(--primary); background: rgba(24,144,255,0.06); }
+.nav-item.active { color: var(--primary); font-weight: 500; }
 
-.brand-section {
-  text-align: center;
-  margin-bottom: 36px;
-}
+.main-body { margin-top: 56px; max-width: 1200px; margin-left: auto; margin-right: auto; padding: 40px 24px; display: flex; gap: 32px; min-height: calc(100vh - 56px); }
 
-.logo-wrapper {
-  width: 72px;
-  height: 72px;
-  background-color: rgba(22, 119, 255, 0.1);
-  border-radius: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 20px;
-}
+.carousel-section { flex: 1; min-height: 420px; }
+.carousel-container { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 8px; min-height: 420px; }
+.carousel-track { display: flex; height: 100%; transition: transform 0.5s ease; }
+.carousel-slide { position: relative; min-width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.slide-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.40); }
+.slide-text { position: relative; z-index: 2; text-align: center; max-width: 560px; padding: 0 24px; }
+.slide-text h2 { font-size: 32px; font-weight: 700; color: #fff; margin: 0 0 12px; }
+.slide-text p { font-size: 15px; color: rgba(255,255,255,0.80); margin: 0; line-height: 1.6; }
+.carousel-arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 5; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.20); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background 0.2s; }
+.carousel-arrow:hover { background: rgba(255,255,255,0.35); }
+.carousel-arrow.left { left: 16px; }
+.carousel-arrow.right { right: 16px; }
+.carousel-dots { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 5; display: flex; gap: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.3s; }
+.dot.active { background: #fff; width: 22px; border-radius: 4px; }
 
-.logo-icon {
-  font-size: 36px;
-}
+.login-section { width: 360px; flex-shrink: 0; display: flex; align-items: center; }
+.login-card { width: 100%; background: var(--card-bg); border-radius: 8px; padding: 32px 28px; box-shadow: var(--shadow); }
+.login-header { text-align: center; margin-bottom: 24px; }
+.login-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+.login-header h2 { font-size: 20px; font-weight: 600; color: var(--text); margin: 0; }
+.role-tabs { display: flex; margin-bottom: 20px; background: #f5f5f5; border-radius: var(--radius); padding: 3px; }
+.tab { flex: 1; padding: 8px; border: none; background: transparent; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text-secondary); transition: all 0.2s; }
+.tab.active { background: #fff; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--text); }
+.form-group input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; color: var(--text); box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; background: #fafafa; }
+.form-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(24,144,255,0.10); background: #fff; }
+.login-btn { width: 100%; padding: 10px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius); font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+.login-btn:hover { background: var(--primary-hover); }
+.login-btn:active { background: var(--primary-active); }
+.register-link { text-align: center; margin-top: 16px; font-size: 14px; color: var(--text-muted); }
+.register-link a { color: var(--primary); text-decoration: none; font-weight: 500; }
+.register-link a:hover { text-decoration: underline; }
 
-h1 {
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 10px 0;
-}
-
-.subtitle {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0;
-}
-
-.role-tabs {
-  display: flex;
-  margin-bottom: 32px;
-  background-color: #f5f5f5;
-  border-radius: var(--border-radius-sm);
-  padding: 4px;
-}
-
-.tab {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  background-color: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.tab.active {
-  background-color: var(--primary-color);
-  color: #ffffff;
-}
-
-.tab:hover:not(.active) {
-  background-color: rgba(22, 119, 255, 0.08);
-}
-
-.form-group {
-  margin-bottom: 22px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.form-group input {
-  width: 100%;
-  padding: 14px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  font-size: 15px;
-  color: var(--text-primary);
-  box-sizing: border-box;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
-}
-
-.form-group input::placeholder {
-  color: #9ca3af;
-}
-
-.login-btn {
-  width: 100%;
-  padding: 15px;
-  background-color: var(--primary-color);
-  color: #ffffff;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.login-btn:hover {
-  background-color: var(--primary-hover);
-}
-
-.register-link {
-  text-align: center;
-  margin-top: 24px;
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.register-link a {
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.register-link a:hover {
-  text-decoration: underline;
-}
-
-@media (max-width: 480px) {
-  .login-card {
-    padding: 40px 28px;
-    width: 100%;
-  }
-
-  h1 {
-    font-size: 22px;
-  }
-
-  .logo-wrapper {
-    width: 60px;
-    height: 60px;
-  }
-
-  .logo-icon {
-    font-size: 28px;
-  }
-}
+@media (max-width: 900px) { .main-body { flex-direction: column; } .carousel-section { min-height: 280px; } .login-section { width: 100%; max-width: 400px; margin: 0 auto; } }
 </style>

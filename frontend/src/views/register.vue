@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="register-container">
     <div class="register-box">
       <h2>用户注册</h2>
@@ -109,90 +109,72 @@ const handleRegister = async () => {
 
 <style scoped>
 .register-container {
+  --primary: #1677ff;
+  --primary-hover: #4096ff;
+  --primary-active: #0958d9;
+  --bg: #f0f2f5;
+  --card-bg: #ffffff;
+  --text: #1d1d1f;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --border: #e5e7eb;
+  --radius: 12px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.08);
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  margin: 0;
-  padding: 0;
+  background: var(--bg);
+  margin: 0; padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .register-box {
-  background: white;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  width: 450px;
+  background: var(--card-bg);
+  padding: 40px 40px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 440px; max-width: 90vw;
 }
 
-h2 {
-  text-align: center;
-  margin-bottom: 30px;
-  color: #333;
-}
+h2 { text-align: center; font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 28px; }
 
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 14px;
-  color: #333;
-}
-
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 6px; font-size: 14px; color: var(--text); font-weight: 500; }
 .form-group input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  box-sizing: border-box;
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 14px; color: var(--text); box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #fafafa;
 }
-
-.form-group input:focus {
-  outline: none;
-  border-color: #409eff;
-}
+.form-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(22,119,255,0.12); background: #fff; }
+.form-group input::placeholder { color: var(--text-muted); }
 
 .role-radio {
-  display: flex;
-  gap: 20px;
+  display: flex; gap: 24px;
 }
-
 .role-radio label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; font-size: 14px; color: var(--text);
 }
+.role-radio input { accent-color: var(--primary); }
 
 .register-btn {
-  width: 100%;
-  padding: 12px;
-  background: #409eff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  cursor: pointer;
+  width: 100%; padding: 11px;
+  background: var(--primary); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: background 0.2s;
 }
+.register-btn:hover { background: var(--primary-hover); }
+.register-btn:active { background: var(--primary-active); }
 
-.register-btn:hover {
-  background: #3088dd;
-}
+.login-link { text-align: center; margin-top: 20px; font-size: 14px; color: var(--text-muted); }
+.login-link a { color: var(--primary); text-decoration: none; font-weight: 500; }
+.login-link a:hover { text-decoration: underline; }
 
-.login-link {
-  text-align: center;
-  margin-top: 16px;
-  font-size: 14px;
-  color: #666;
-}
-
-.login-link a {
-  color: #409eff;
-  text-decoration: none;
+@media (max-width: 480px) {
+  .register-box { padding: 32px 20px; width: 100%; }
 }
 </style>

@@ -1,1 +1,0 @@
-import{s as e}from"./user-By3B10nG.js";const s=t=>e.post("/intent/send",t),r=t=>e.post(`/intent/accept/${t}`),c=t=>e.post(`/intent/reject/${t}`),o=()=>e.get("/intent/my-sent"),a=()=>e.get("/intent/my-received"),i=t=>e.get(`/intent/contact/${t}`);export{a,r as b,i as c,o as g,c as r,s};

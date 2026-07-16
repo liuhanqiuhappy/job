@@ -1,1 +1,0 @@
-import{_ as o,c as a,a as s,o as t}from"./index-C149VuVf.js";const n={},r={class:"dashboard"};function c(d,e){return t(),a("div",r,[...e[0]||(e[0]=[s("h1",null,"欢迎个人用户",-1),s("p",null,"您可以在这里上传简历并查看职位推荐",-1)])])}const l=o(n,[["render",c],["__scopeId","data-v-99e9d85d"]]);export{l as default};

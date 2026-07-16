@@ -92,15 +92,7 @@ public class DeepSeekLLMServiceImpl implements LLMService {
     }
 
     private String generateMockData(String prompt) {
-        if (prompt.contains("简历")) {
-            String mock = "{\"name\":\"张三\",\"education\":\"本科\",\"skills\":[\"Java\",\"Spring\",\"MySQL\",\"Vue\"],\"experience\":5,\"city\":\"成都\"}";
-            log.info("使用简历模拟数据：{}", mock);
-            return mock;
-        } else if (prompt.contains("职位")) {
-            String mock = "{\"title\":\"高级Java开发工程师\",\"eduReq\":\"本科\",\"skillReq\":[\"Java\",\"Spring Boot\",\"MySQL\",\"Redis\"],\"expReq\":3,\"city\":\"北京\"}";
-            log.info("使用职位模拟数据：{}", mock);
-            return mock;
-        }
+        log.warn("大模型API调用失败，返回空数据");
         return "{}";
     }
 

@@ -47,37 +47,53 @@ public class IntentController {
             @RequestBody Map<String, Object> params,
             HttpSession session
     ) {
-        Long userId = (Long) session.getAttribute("userId");
-        Integer role = (Integer) session.getAttribute("role");
-        if (userId == null || role == null) {
-            return Result.error("未登录");
+        System.out.println("=== 发送意向请求到达，参数：" + params);
+        
+        try {
+            Long userId = (Long) session.getAttribute("userId");
+            Integer role = (Integer) session.getAttribute("role");
+            if (userId == null || role == null) {
+                return Result.error("请先登录");
+            }
+
+            Long toUserId = params.get("toUserId") != null ? Long.valueOf(params.get("toUserId").toString()) : null;
+            Long resumeId = params.get("resumeId") != null ? Long.valueOf(params.get("resumeId").toString()) : null;
+            Long jobId = params.get("jobId") != null ? Long.valueOf(params.get("jobId").toString()) : null;
+            String message = params.get("message") != null ? params.get("message").toString() : "";
+
+            logger.info("发送意向请求: userId={}, role={}, toUserId={}, resumeId={}, jobId={}",
+                    userId, role, toUserId, resumeId, jobId);
+
+            if (toUserId == null) {
+                return Result.error("缺少必要参数：toUserId");
+            }
+            if (jobId == null) {
+                return Result.error("缺少必要参数：jobId");
+            }
+
+            if (intentService.hasActiveIntent(userId, toUserId, resumeId, jobId)) {
+                return Result.error("已发送过意向，请等待对方回应");
+            }
+
+            Intent intent = new Intent();
+            intent.setFromUserId(userId);
+            intent.setToUserId(toUserId);
+            intent.setResumeId(resumeId);
+            intent.setJobId(jobId);
+            intent.setType(role);
+            intent.setMessage(message);
+            intent.setStatus(0);
+
+            Date expireTime = new Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000L);
+            intent.setExpireTime(expireTime);
+
+            intentService.sendIntent(intent);
+            return Result.success("意向发送成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("发送意向异常: {}", e.getMessage(), e);
+            return Result.error("发送失败：" + e.getMessage());
         }
-
-        Long toUserId = ((Number) params.get("toUserId")).longValue();
-        Long resumeId = params.get("resumeId") != null ? ((Number) params.get("resumeId")).longValue() : null;
-        Long jobId = params.get("jobId") != null ? ((Number) params.get("jobId")).longValue() : null;
-        String message = (String) params.get("message");
-
-        logger.info("发送意向请求: userId={}, role={}, toUserId={}, resumeId={}, jobId={}",
-                userId, role, toUserId, resumeId, jobId);
-
-        if (intentService.hasActiveIntent(userId, toUserId, resumeId, jobId)) {
-            return Result.error("已发送过意向，请等待对方回应");
-        }
-
-        Intent intent = new Intent();
-        intent.setFromUserId(userId);
-        intent.setToUserId(toUserId);
-        intent.setResumeId(resumeId);
-        intent.setJobId(jobId);
-        intent.setType(role);
-        intent.setMessage(message);
-
-        Date expireTime = new Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000L);
-        intent.setExpireTime(expireTime);
-
-        intentService.sendIntent(intent);
-        return Result.success("意向发送成功");
     }
 
     @PostMapping("/accept/{intentId}")
